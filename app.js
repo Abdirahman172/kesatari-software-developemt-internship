@@ -596,8 +596,8 @@ function setTableLayout() {
         const col = index % cols;
         const row = Math.floor(index / cols);
         
-        object.position.x = col * 140 - (cols * 140) / 2;
-        object.position.y = -(row * 180) + (rows * 180) / 2;
+        object.position.x = col * 130 - (cols * 130) / 2;
+        object.position.y = -(row * 170) + (rows * 170) / 2;
         object.position.z = 0;
         
         object.rotation.x = 0;
@@ -606,12 +606,12 @@ function setTableLayout() {
     });
     
     // Adjust camera to show all profiles
-    const tableWidth = cols * 140;
-    const tableHeight = rows * 180;
+    const tableWidth = cols * 130;
+    const tableHeight = rows * 170;
     const maxDimension = Math.max(tableWidth, tableHeight);
-    const optimalDistance = maxDimension * 1.2; // 20% padding
+    const optimalDistance = maxDimension * 0.8; // Better fit
     
-    camera.position.set(0, 0, Math.max(optimalDistance, 2000));
+    camera.position.set(0, 0, Math.max(optimalDistance, 1800));
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     
@@ -704,9 +704,9 @@ function setGridLayout() {
         const row = Math.floor(index / cols) % rows;
         const layer = Math.floor(index / (cols * rows));
         
-        object.position.x = col * 200 - (cols * 200) / 2;
-        object.position.y = row * 200 - (rows * 200) / 2;
-        object.position.z = layer * 200 - (layers * 200) / 2;
+        object.position.x = col * 150 - (cols * 150) / 2;
+        object.position.y = row * 180 - (rows * 180) / 2;
+        object.position.z = layer * 180 - (layers * 180) / 2;
         
         object.rotation.x = 0;
         object.rotation.y = 0;
@@ -714,11 +714,11 @@ function setGridLayout() {
     });
     
     // Position camera to see the full grid
-    const gridWidth = cols * 200;
-    const gridHeight = rows * 200;
-    const gridDepth = layers * 200;
+    const gridWidth = cols * 150;
+    const gridHeight = rows * 180;
+    const gridDepth = layers * 180;
     const maxDimension = Math.max(gridWidth, gridHeight, gridDepth);
-    const optimalDistance = maxDimension * 1.5;
+    const optimalDistance = maxDimension * 1.2;
     
     camera.position.set(optimalDistance * 0.7, optimalDistance * 0.5, optimalDistance * 0.7);
     camera.lookAt(0, 0, 0);
