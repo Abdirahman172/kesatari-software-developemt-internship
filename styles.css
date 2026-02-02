@@ -8,20 +8,20 @@
 html, body {
     width: 100%;
     height: 100%;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     background: #000;
     color: #fff;
     overflow: hidden;
 }
 
-/* Login Screen Styles */
+/* Login Screen Styles - Match Image A */
 .login-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: #000;
+    background: #fff;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -29,26 +29,26 @@ html, body {
 }
 
 .login-card {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 40px;
-    border-radius: 8px;
+    background: #fff;
+    padding: 60px;
     text-align: center;
-    color: #fff;
-    max-width: 400px;
+    color: #333;
+    max-width: 500px;
     width: 90%;
+    border: 2px solid #ddd;
 }
 
 .login-card h1 {
-    margin-bottom: 20px;
-    font-size: 24px;
-    font-weight: 300;
+    margin-bottom: 40px;
+    font-size: 32px;
+    font-weight: normal;
+    color: #333;
 }
 
 .login-card p {
     margin-bottom: 30px;
-    font-size: 14px;
-    opacity: 0.8;
+    font-size: 16px;
+    color: #666;
 }
 
 /* App Container */
@@ -59,51 +59,58 @@ html, body {
     background: #000;
 }
 
-/* Controls */
+/* Controls - BOTTOM POSITION like in images */
 .controls {
     position: fixed;
-    top: 20px;
-    left: 20px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 100;
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .layout-btn, .logout-btn {
-    padding: 10px 20px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.8);
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.6);
     color: #fff;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: normal;
     transition: all 0.2s ease;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
+    font-family: Arial, sans-serif;
 }
 
 .layout-btn:hover, .logout-btn:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 255, 255, 0.6);
 }
 
 .layout-btn.active {
     background: rgba(255, 255, 255, 0.2);
     border-color: #fff;
+    color: #fff;
 }
 
 .logout-btn {
-    background: rgba(255, 0, 0, 0.2);
-    border-color: rgba(255, 0, 0, 0.5);
+    background: rgba(200, 0, 0, 0.3);
+    border-color: rgba(200, 0, 0, 0.6);
+    margin-left: 10px;
 }
 
 .logout-btn:hover {
-    background: rgba(255, 0, 0, 0.3);
+    background: rgba(200, 0, 0, 0.5);
 }
 
-/* Data Source Indicator */
+/* Data Source Indicator - TOP RIGHT */
 .data-source {
     position: fixed;
     top: 20px;
@@ -112,20 +119,22 @@ html, body {
     background: rgba(0, 0, 0, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: #fff;
-    padding: 10px 15px;
-    border-radius: 4px;
-    font-size: 11px;
+    padding: 8px 12px;
+    border-radius: 3px;
+    font-size: 10px;
     text-align: right;
+    font-family: Arial, sans-serif;
 }
 
 .data-source span {
     display: block;
-    line-height: 1.4;
+    line-height: 1.3;
 }
 
 #profileCount {
     color: #4a90e2;
     font-weight: bold;
+    font-size: 11px;
 }
 
 /* Loading Indicator */
@@ -162,171 +171,198 @@ html, body {
     background: #000;
 }
 
-/* Profile Card Styles - Clean Periodic Table Style */
+/* Profile Card Styles - EXACT PERIODIC TABLE STYLE */
 .profile-card {
-    width: 120px;
-    height: 160px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    padding: 10px;
+    width: 80px;
+    height: 80px;
+    background: #1a4a5c;
+    border: 1px solid #2a6a7c;
+    border-radius: 2px;
+    padding: 4px;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     cursor: pointer;
     position: relative;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .profile-card:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.6);
-    transform: scale(1.05);
+    background: #2a6a7c;
+    border-color: #4a8a9c;
+    transform: scale(1.1);
+    z-index: 10;
 }
 
-/* Profile Index Number */
+/* Profile Index Number - TOP LEFT CORNER */
 .profile-index {
     position: absolute;
-    top: 3px;
-    left: 3px;
-    background: rgba(0, 0, 0, 0.7);
+    top: 2px;
+    left: 2px;
+    background: rgba(0, 0, 0, 0.8);
     color: #fff;
-    font-size: 9px;
-    padding: 2px 4px;
-    border-radius: 2px;
+    font-size: 8px;
+    padding: 1px 3px;
+    border-radius: 1px;
     font-weight: bold;
+    line-height: 1;
 }
 
+/* Profile Photo - SMALL, TOP CENTER */
 .profile-photo {
-    width: 50px;
-    height: 50px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     object-fit: cover;
-    margin: 5px auto 8px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    margin: 8px auto 2px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     display: block;
 }
 
+/* Profile Name - LARGE, CENTER */
 .profile-name {
-    font-size: 11px;
+    font-size: 9px;
     font-weight: bold;
-    margin-bottom: 4px;
     color: #fff;
-    line-height: 1.2;
+    line-height: 1;
+    margin-bottom: 1px;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+    text-align: center;
 }
 
+/* Profile Details - SMALL, BOTTOM */
 .profile-age {
-    font-size: 9px;
+    font-size: 7px;
     color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 3px;
+    line-height: 1;
+    margin-bottom: 1px;
 }
 
 .profile-country {
-    font-size: 9px;
+    font-size: 7px;
     color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 3px;
+    line-height: 1;
+    margin-bottom: 1px;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
 }
 
 .profile-interest {
-    font-size: 8px;
+    font-size: 6px;
     color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 5px;
-    line-height: 1.1;
-    height: 16px;
+    line-height: 1;
+    margin-bottom: 2px;
+    height: 8px;
     overflow: hidden;
 }
 
 .profile-networth {
-    font-size: 10px;
+    font-size: 7px;
     font-weight: bold;
     color: #fff;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 3px 6px;
-    border-radius: 3px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 1px 2px;
+    border-radius: 1px;
+    line-height: 1;
 }
 
-/* Net Worth Color Classes - Clean and Professional */
+/* Net Worth Color Classes - EXACT PERIODIC TABLE COLORS */
 .networth-low {
-    background: rgba(220, 53, 69, 0.8) !important;
-    border-color: rgba(220, 53, 69, 0.6) !important;
+    background: #8B0000 !important; /* Dark Red */
+    border-color: #A52A2A !important;
 }
 
 .networth-low .profile-networth {
-    background: rgba(220, 53, 69, 0.9) !important;
-    border-color: rgba(220, 53, 69, 0.8) !important;
+    background: rgba(139, 0, 0, 0.9) !important;
 }
 
 .networth-medium {
-    background: rgba(255, 193, 7, 0.8) !important;
-    border-color: rgba(255, 193, 7, 0.6) !important;
+    background: #FF8C00 !important; /* Dark Orange */
+    border-color: #FFA500 !important;
 }
 
 .networth-medium .profile-networth {
-    background: rgba(255, 193, 7, 0.9) !important;
-    border-color: rgba(255, 193, 7, 0.8) !important;
+    background: rgba(255, 140, 0, 0.9) !important;
     color: #000 !important;
 }
 
 .networth-high {
-    background: rgba(40, 167, 69, 0.8) !important;
-    border-color: rgba(40, 167, 69, 0.6) !important;
+    background: #006400 !important; /* Dark Green */
+    border-color: #228B22 !important;
 }
 
 .networth-high .profile-networth {
-    background: rgba(40, 167, 69, 0.9) !important;
-    border-color: rgba(40, 167, 69, 0.8) !important;
+    background: rgba(0, 100, 0, 0.9) !important;
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-    .controls {
-        top: 10px;
-        left: 10px;
-        right: 10px;
-        justify-content: center;
-    }
-    
-    .layout-btn, .logout-btn {
-        padding: 8px 12px;
-        font-size: 10px;
-    }
-    
+@media (max-width: 1200px) {
     .profile-card {
-        width: 100px;
-        height: 130px;
-        padding: 8px;
+        width: 70px;
+        height: 70px;
+        padding: 3px;
     }
     
     .profile-photo {
-        width: 40px;
-        height: 40px;
+        width: 20px;
+        height: 20px;
     }
     
     .profile-name {
-        font-size: 10px;
-    }
-    
-    .profile-age, .profile-country {
         font-size: 8px;
     }
     
-    .profile-interest {
-        font-size: 7px;
-        height: 14px;
+    .profile-age, .profile-country, .profile-networth {
+        font-size: 6px;
     }
     
-    .profile-networth {
-        font-size: 9px;
+    .profile-interest {
+        font-size: 5px;
     }
 }
 
-/* Ensure no scrollbars */
+@media (max-width: 768px) {
+    .controls {
+        bottom: 10px;
+        padding: 8px 15px;
+    }
+    
+    .layout-btn, .logout-btn {
+        padding: 6px 10px;
+        font-size: 9px;
+    }
+    
+    .profile-card {
+        width: 60px;
+        height: 60px;
+        padding: 2px;
+    }
+    
+    .profile-photo {
+        width: 16px;
+        height: 16px;
+    }
+    
+    .profile-name {
+        font-size: 7px;
+    }
+    
+    .profile-age, .profile-country, .profile-networth {
+        font-size: 5px;
+    }
+    
+    .profile-interest {
+        font-size: 4px;
+        height: 6px;
+    }
+}
+
+/* Hide scrollbars */
 ::-webkit-scrollbar {
     display: none;
 }

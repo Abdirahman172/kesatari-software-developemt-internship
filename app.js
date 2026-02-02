@@ -477,15 +477,15 @@ function initThreeJS() {
     renderer.domElement.style.top = '0';
     container.appendChild(renderer.domElement);
     
-    // Create controls with better range for 200 profiles
+    // Create controls with better range for compact design
     controls = new THREE.TrackballControls(camera, renderer.domElement);
-    controls.rotateSpeed = 0.5;
-    controls.minDistance = 200;   // Allow very close inspection
-    controls.maxDistance = 15000; // Allow very far overview
+    controls.rotateSpeed = 0.8;
+    controls.minDistance = 100;   // Allow very close inspection
+    controls.maxDistance = 8000;  // Allow far overview
     controls.addEventListener('change', render);
     
     // Set initial camera position
-    camera.position.set(0, 0, 4000);
+    camera.position.set(0, 0, 1500);
     camera.lookAt(0, 0, 0);
     
     // Handle window resize
@@ -585,10 +585,10 @@ function setLayout(layoutType) {
     }, 100);
 }
 
-// Table layout (20 columns × 10 rows) - handles all profiles properly
+// Table layout (20 columns × 10 rows) - EXACT PERIODIC TABLE STYLE
 function setTableLayout() {
     const cols = 20;
-    const rows = Math.ceil(objects.length / cols); // Dynamic rows based on actual data
+    const rows = Math.ceil(objects.length / cols);
     
     console.log(`Table layout: ${objects.length} profiles in ${cols} cols × ${rows} rows`);
     
@@ -596,8 +596,9 @@ function setTableLayout() {
         const col = index % cols;
         const row = Math.floor(index / cols);
         
-        object.position.x = col * 130 - (cols * 130) / 2;
-        object.position.y = -(row * 170) + (rows * 170) / 2;
+        // Exact spacing like periodic table - tight grid
+        object.position.x = col * 85 - (cols * 85) / 2;
+        object.position.y = -(row * 85) + (rows * 85) / 2;
         object.position.z = 0;
         
         object.rotation.x = 0;
@@ -605,13 +606,13 @@ function setTableLayout() {
         object.rotation.z = 0;
     });
     
-    // Adjust camera to show all profiles
-    const tableWidth = cols * 130;
-    const tableHeight = rows * 170;
+    // Camera positioning for full table view
+    const tableWidth = cols * 85;
+    const tableHeight = rows * 85;
     const maxDimension = Math.max(tableWidth, tableHeight);
-    const optimalDistance = maxDimension * 0.8; // Better fit
+    const optimalDistance = maxDimension * 0.7;
     
-    camera.position.set(0, 0, Math.max(optimalDistance, 1800));
+    camera.position.set(0, 0, Math.max(optimalDistance, 1200));
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     
@@ -624,7 +625,7 @@ function setTableLayout() {
 
 // Sphere layout - properly distribute all profiles
 function setSphereLayout() {
-    const radius = 800;
+    const radius = 600; // Smaller radius for better view
     const totalProfiles = objects.length;
     
     console.log(`Sphere layout: ${totalProfiles} profiles on sphere with radius ${radius}`);
@@ -650,7 +651,7 @@ function setSphereLayout() {
     });
     
     // Position camera to see the full sphere
-    camera.position.set(0, 0, radius * 2.5);
+    camera.position.set(0, 0, radius * 2.2);
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     
@@ -660,9 +661,9 @@ function setSphereLayout() {
 
 // Double Helix layout - properly distribute all profiles
 function setHelixLayout() {
-    const radius = 600;
+    const radius = 400; // Smaller radius
     const totalProfiles = objects.length;
-    const height = Math.max(2000, totalProfiles * 10); // Dynamic height based on profile count
+    const height = Math.max(1500, totalProfiles * 8); // Dynamic height
     
     console.log(`Double Helix layout: ${totalProfiles} profiles in double helix, height: ${height}`);
     
@@ -670,7 +671,7 @@ function setHelixLayout() {
         const isFirstHelix = index % 2 === 0;
         const helixIndex = Math.floor(index / 2);
         const y = (helixIndex / (totalProfiles / 2)) * height - height / 2;
-        const angle = helixIndex * 0.175 + (isFirstHelix ? 0 : Math.PI);
+        const angle = helixIndex * 0.2 + (isFirstHelix ? 0 : Math.PI);
         
         object.position.x = Math.cos(angle) * radius;
         object.position.y = y;
@@ -682,7 +683,7 @@ function setHelixLayout() {
     });
     
     // Position camera to see the full helix
-    camera.position.set(radius * 2, 0, radius * 2);
+    camera.position.set(radius * 2.5, 0, radius * 2.5);
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     
@@ -690,12 +691,12 @@ function setHelixLayout() {
     updateLayoutInfo(`Double Helix: ${totalProfiles} profiles, height ${height}`);
 }
 
-// Grid layout (5 × 4 × 10) - properly distribute all profiles
+// Grid layout (5 × 4 × 10) - EXACT IMAGE C SPECIFICATION
 function setGridLayout() {
     const cols = 5;
     const rows = 4;
     const totalProfiles = objects.length;
-    const layers = Math.ceil(totalProfiles / (cols * rows)); // Dynamic layers based on actual data
+    const layers = Math.ceil(totalProfiles / (cols * rows));
     
     console.log(`Grid layout: ${totalProfiles} profiles in ${cols}×${rows}×${layers} grid`);
     
@@ -704,23 +705,24 @@ function setGridLayout() {
         const row = Math.floor(index / cols) % rows;
         const layer = Math.floor(index / (cols * rows));
         
-        object.position.x = col * 150 - (cols * 150) / 2;
-        object.position.y = row * 180 - (rows * 180) / 2;
-        object.position.z = layer * 180 - (layers * 180) / 2;
+        // Spacing to match Image C - 5×4×10 structure
+        object.position.x = col * 120 - (cols * 120) / 2;
+        object.position.y = row * 120 - (rows * 120) / 2;
+        object.position.z = layer * 120 - (layers * 120) / 2;
         
         object.rotation.x = 0;
         object.rotation.y = 0;
         object.rotation.z = 0;
     });
     
-    // Position camera to see the full grid
-    const gridWidth = cols * 150;
-    const gridHeight = rows * 180;
-    const gridDepth = layers * 180;
+    // Camera positioning for 3D grid view like Image C
+    const gridWidth = cols * 120;
+    const gridHeight = rows * 120;
+    const gridDepth = layers * 120;
     const maxDimension = Math.max(gridWidth, gridHeight, gridDepth);
-    const optimalDistance = maxDimension * 1.2;
+    const optimalDistance = maxDimension * 1.0;
     
-    camera.position.set(optimalDistance * 0.7, optimalDistance * 0.5, optimalDistance * 0.7);
+    camera.position.set(optimalDistance * 0.8, optimalDistance * 0.6, optimalDistance * 0.8);
     camera.lookAt(0, 0, 0);
     controls.target.set(0, 0, 0);
     
