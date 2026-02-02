@@ -619,8 +619,16 @@ function setTableLayout() {
     // Update layout info
     updateLayoutInfo(`Table: ${cols}×${rows} (${objects.length} profiles)`);
     
+    // Update debug info to show visual order
+    const debugInfo = document.getElementById('debugInfo');
+    if (debugInfo && objects.length > 0) {
+        debugInfo.textContent = `Visual: ${objects[0].userData.profile.name} → ${objects[objects.length-1].userData.profile.name}`;
+    }
+    
     // Verify order
     console.log(`Table layout - First visible: ${objects[0].userData.profile.name}, Last visible: ${objects[objects.length-1].userData.profile.name}`);
+    console.log(`Position 0 (top-left): ${objects[0].userData.profile.name} at (${objects[0].position.x}, ${objects[0].position.y})`);
+    console.log(`Position ${objects.length-1} (bottom-right): ${objects[objects.length-1].userData.profile.name} at (${objects[objects.length-1].position.x}, ${objects[objects.length-1].position.y})`);
 }
 
 // Sphere layout - properly distribute all profiles
