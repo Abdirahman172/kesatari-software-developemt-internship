@@ -1,238 +1,104 @@
-# 3D Profile Visualization - Complete Setup Guide
+# 3D Profile Visualization - Kasatari Software Developer Internship
 
-A complete frontend web application that displays profile data from Google Sheets in an interactive 3D visualization using Three.js CSS3DRenderer, meeting all specified requirements.
+A stunning 3D web application that visualizes profile data from Google Sheets using Three.js CSS3D rendering.
 
-## 🎯 Requirements Checklist
+## 🌟 Features
 
-✅ **Google Sheets Integration**: Fetches data from published Google Sheet  
-✅ **Google Authentication**: Secure login with Google Identity Services  
-✅ **3D Periodic Table Style**: Based on Three.js CSS3D periodic table demo  
-✅ **Custom Data Structure**: Replaces chemical elements with profile data  
-✅ **Net Worth Color Coding**: Red (<$100K), Orange ($100K-$200K), Green (>$200K)  
-✅ **Four Layout Modes**: Table (20×10), Sphere, Double Helix, Grid (5×4×10)  
-✅ **Responsive Design**: Works across different screen sizes  
+- **Google Authentication**: Secure login with Google Identity Services
+- **Google Sheets Integration**: Real-time data loading from published CSV
+- **4 Layout Modes**: Table (20×10), Sphere, Double Helix, Grid (5×4×10)
+- **Color-Coded Profiles**: Net worth visualization (Red <$100K, Orange $100K-$200K, Green >$200K)
+- **3D Navigation**: Intuitive mouse controls for rotation and zoom
+- **Profile Numbering**: Sequential numbering matching Google Sheets order
+- **Responsive Design**: Modern glass morphism UI with gradient backgrounds
 
-## 🚀 Quick Start
+## 🎮 Navigation
 
-### Step 1: Create Google Sheet
+- **Mouse Drag**: Rotate camera around 3D space
+- **Mouse Scroll**: Zoom in/out for detailed inspection
+- **Layout Buttons**: Switch between Table, Sphere, Double Helix, and Grid views
+- **Profile Cards**: Display photo, name, age, country, interest, and net worth
 
-1. **Create a new Google Sheet** with exactly these columns:
-   ```
-   Name | Photo | Age | Country | Interest | Net Worth
-   ```
+## 🚀 Live Demo
 
-2. **Add your data** following the format in `sample-data.csv`
+The application loads 200 profiles from Google Sheets and displays them in beautiful 3D arrangements:
 
-3. **Share with lisa@kasatria.com**:
-   - Click "Share" button
-   - Add `lisa@kasatria.com` with "Viewer" access
-   - Click "Send"
+- **Table Layout**: 20×10 periodic table style grid
+- **Sphere Layout**: Profiles distributed on sphere surface
+- **Double Helix Layout**: Two intertwined DNA-like spirals
+- **Grid Layout**: 3D cube arrangement (5×4×10)
 
-4. **Publish to web**:
-   - File → Share → Publish to web
-   - Choose "Entire Document" and "Comma-separated values (.csv)"
-   - Click "Publish"
-   - Copy the published URL
+## 🛠️ Technical Stack
 
-5. **Update the CSV URL** in `app.js` line 67:
-   ```javascript
-   const csvUrl = 'YOUR_PUBLISHED_CSV_URL_HERE';
-   ```
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **3D Engine**: Three.js with CSS3DRenderer
+- **Authentication**: Google Identity Services
+- **Data Source**: Google Sheets (CSV export)
+- **Styling**: Modern CSS with glass morphism effects
 
-### Step 2: Google Cloud Project Setup
+## 📋 Requirements Met
 
-The app currently uses a demo Client ID. For production:
+✅ Google Sheet integration with CSV import  
+✅ Google login authentication system  
+✅ Modified periodic table demo structure  
+✅ Profile data display (photo, name, age, country, interest, net worth)  
+✅ Color coding by net worth (Red/Orange/Green)  
+✅ 4 layout formats (Table, Sphere, Helix, Grid)  
+✅ Table arrangement: 20×10 grid  
+✅ Double helix implementation  
+✅ Grid arrangement: 5×4×10 structure  
+✅ Fully functional web application  
 
-1. **Create Google Cloud Project**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create new project or select existing one
+## 🎯 Data Structure
 
-2. **Enable Google Identity Services**:
-   - APIs & Services → Library
-   - Search "Google Identity" and enable
+Each profile contains:
+- **Name**: Person's full name
+- **Photo**: Profile image URL
+- **Age**: Person's age
+- **Country**: Country of residence
+- **Interest**: Area of interest/expertise
+- **Net Worth**: Financial value (color-coded)
 
-3. **Create OAuth 2.0 Credentials**:
-   - APIs & Services → Credentials
-   - Create Credentials → OAuth 2.0 Client IDs
-   - Application type: Web application
-   - Add your domain to authorized origins
+## 🔧 Setup & Installation
 
-4. **Update Client ID** in `index.html` line 12:
-   ```html
-   data-client_id="YOUR_CLIENT_ID_HERE"
-   ```
+1. Clone the repository
+2. Ensure Google Sheets is properly published as CSV
+3. Update the CSV URL in `app.js` if needed
+4. Serve files using a local server (e.g., `python -m http.server 8000`)
+5. Access via `http://localhost:8000`
 
-### Step 3: Deploy
+## 📊 Profile Distribution
 
-#### Option A: GitHub Pages
-1. Push code to GitHub repository
-2. Settings → Pages → Select source branch
-3. Access at `https://username.github.io/repository-name`
+- **Total Profiles**: 200
+- **First Profile**: Lee Siew Suan (#1)
+- **Last Profile**: Collen McClintock (#200)
+- **Order**: Matches Google Sheets sequence exactly
 
-#### Option B: Netlify
-1. Drag project folder to [Netlify](https://netlify.com)
-2. Get instant URL
+## 🎨 Visual Design
 
-#### Option C: Vercel
-1. Connect GitHub repo to [Vercel](https://vercel.com)
-2. Auto-deploy on commits
+- Modern gradient backgrounds with animation
+- Glass morphism effects with backdrop blur
+- Professional color scheme and typography
+- Hover effects and smooth transitions
+- Responsive layout for different screen sizes
 
-## 📊 Data Structure Requirements
+## 🔍 Color Coding System
 
-Your Google Sheet must have these exact columns:
+- 🔴 **Red**: Net worth < $100,000
+- 🟠 **Orange**: Net worth $100,000 - $200,000
+- 🟢 **Green**: Net worth > $200,000
 
-| Column | Type | Example | Description |
-|--------|------|---------|-------------|
-| Name | Text | "John Smith" | Full name of person |
-| Photo | URL | "https://..." | Profile image URL |
-| Age | Number | 28 | Age in years |
-| Country | Text | "USA" | Country name |
-| Interest | Text | "Technology" | Area of interest |
-| Net Worth | Number | 150000 | Net worth in USD |
+## 📱 Browser Compatibility
 
-## 🎨 Layout Specifications
+- Chrome (recommended)
+- Firefox
+- Safari
+- Edge
 
-### 1. Table Layout (20×10)
-- **Grid**: 20 columns × 10 rows = 200 profiles max
-- **Spacing**: 140px horizontal, 180px vertical
-- **View**: Front-facing periodic table style
+## 👨‍💻 Developer
 
-### 2. Sphere Layout
-- **Algorithm**: Fibonacci sphere distribution
-- **Radius**: 800px
-- **Rotation**: Cards face outward from center
+**Abdirahman** - Kasatari Software Developer Internship Assignment
 
-### 3. Double Helix Layout
-- **Structure**: Two intertwined helical spirals
-- **Radius**: 600px per helix
-- **Height**: 2000px total
-- **Alternating**: Profiles alternate between helixes
+## 📄 License
 
-### 4. Grid Layout (5×4×10)
-- **Dimensions**: 5 wide × 4 high × 10 deep
-- **Spacing**: 200px in all directions
-- **Total**: 200 profiles in 3D cube
-
-## 🎨 Color Coding System
-
-Profile cards are automatically colored based on Net Worth:
-
-- 🔴 **Red**: Net Worth < $100,000
-- 🟠 **Orange**: Net Worth $100,000 - $200,000  
-- 🟢 **Green**: Net Worth > $200,000
-
-## 🔧 Technical Architecture
-
-### Core Technologies
-- **Three.js v0.158.0**: 3D graphics engine
-- **CSS3DRenderer**: HTML/CSS in 3D space
-- **TrackballControls**: Interactive camera controls
-- **Google Identity Services**: Authentication
-- **Vanilla JavaScript**: No frameworks, pure performance
-
-### File Structure
-```
-├── index.html          # Main application
-├── app.js             # Core JavaScript logic
-├── styles.css         # All styling
-├── three-bundle.js    # Three.js module loader
-├── sample-data.csv    # Example data format
-└── README.md          # This documentation
-```
-
-### Performance Features
-- **Hardware Acceleration**: CSS3D uses GPU
-- **Smooth Animations**: 60fps transitions between layouts
-- **Efficient Rendering**: Optimized for 200+ profiles
-- **Memory Management**: Proper cleanup on logout
-
-## 🎮 User Interface
-
-### Controls
-- **Table Button**: Switch to 20×10 grid layout
-- **Sphere Button**: Switch to spherical arrangement
-- **Double Helix Button**: Switch to DNA-style double helix
-- **Grid Button**: Switch to 5×4×10 3D cube
-- **Logout Button**: Return to login screen
-
-### Interactions
-- **Mouse Drag**: Rotate camera around scene
-- **Mouse Wheel**: Zoom in/out
-- **Card Hover**: Highlight and scale effect
-- **Smooth Transitions**: 2-second animated layout changes
-
-## 🔒 Security & Privacy
-
-- **Client-side Only**: No server required
-- **Google OAuth**: Secure authentication
-- **HTTPS Required**: For production deployment
-- **No Data Storage**: No local data persistence
-- **Public Sheets**: Google Sheets must be publicly readable
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **"Login not working"**
-   - Check Client ID is correct
-   - Verify domain is authorized in Google Cloud Console
-   - Ensure HTTPS in production
-
-2. **"Data not loading"**
-   - Verify Google Sheet is published to web
-   - Check CSV URL is correct
-   - Ensure sheet has proper column headers
-
-3. **"3D not rendering"**
-   - Check browser supports WebGL
-   - Verify Three.js loaded (check console)
-   - Try different browser
-
-4. **"Performance issues"**
-   - Reduce number of profiles
-   - Close other browser tabs
-   - Check hardware acceleration enabled
-
-### Debug Information
-Open browser console (F12) to see detailed logs and error messages.
-
-## 🌐 Browser Support
-
-- ✅ Chrome 60+
-- ✅ Firefox 55+  
-- ✅ Safari 12+
-- ✅ Edge 79+
-- ❌ Internet Explorer (not supported)
-
-## 📱 Mobile Considerations
-
-While optimized for desktop, the app includes:
-- Responsive button layouts
-- Touch-friendly controls
-- Scaled profile cards
-- Mobile-optimized spacing
-
-## 🎯 Demo Data
-
-Use the included `sample-data.csv` as a template for your Google Sheet. It includes 20 sample profiles with proper formatting and realistic data.
-
-## 📞 Support
-
-For issues or questions:
-1. Check browser console for error messages
-2. Verify all setup steps completed
-3. Test with sample data first
-4. Ensure stable internet connection
-
-## 🚀 Going Live
-
-Once setup is complete:
-1. Test locally with your data
-2. Deploy to your chosen platform
-3. Share the URL as requested
-4. Verify all layouts work correctly
-5. Test authentication flow
-
----
-
-**Ready to deploy?** Follow the setup steps above and you'll have a fully functional 3D profile visualization that meets all requirements!
+This project is part of the Kasatari Software Developer Internship program.
