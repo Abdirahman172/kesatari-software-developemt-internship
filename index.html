@@ -7,18 +7,18 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    <!-- Three.js and required components - using working versions -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Use Three.js r121 - stable version that works with function constructors -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     
-    <!-- CSS3DRenderer and TrackballControls - inline working versions -->
+    <!-- CSS3DRenderer and TrackballControls for r121 -->
     <script>
         // Wait for THREE to be loaded
         window.addEventListener('load', function() {
             if (typeof THREE !== 'undefined') {
-                console.log('✅ THREE.js loaded, version:', THREE.REVISION);
+                console.log('✅ THREE.js r121 loaded successfully');
                 
-                // CSS3DObject
+                // CSS3DObject for r121
                 THREE.CSS3DObject = function ( element ) {
                     THREE.Object3D.call( this );
                     this.element = element;
@@ -34,26 +34,16 @@
                 };
                 THREE.CSS3DObject.prototype = Object.create( THREE.Object3D.prototype );
                 THREE.CSS3DObject.prototype.constructor = THREE.CSS3DObject;
-                THREE.CSS3DObject.prototype.copy = function ( source, recursive ) {
-                    THREE.Object3D.prototype.copy.call( this, source, recursive );
-                    this.element = source.element.cloneNode( true );
-                    return this;
-                };
 
-                // CSS3DSprite
+                // CSS3DSprite for r121
                 THREE.CSS3DSprite = function ( element ) {
                     THREE.CSS3DObject.call( this, element );
                     this.rotation2D = 0;
                 };
                 THREE.CSS3DSprite.prototype = Object.create( THREE.CSS3DObject.prototype );
                 THREE.CSS3DSprite.prototype.constructor = THREE.CSS3DSprite;
-                THREE.CSS3DSprite.prototype.copy = function ( source, recursive ) {
-                    THREE.CSS3DObject.prototype.copy.call( this, source, recursive );
-                    this.rotation2D = source.rotation2D;
-                    return this;
-                };
 
-                // CSS3DRenderer
+                // CSS3DRenderer for r121
                 THREE.CSS3DRenderer = function ( parameters ) {
                     console.log( 'THREE.CSS3DRenderer', THREE.REVISION );
                     parameters = parameters || {};
@@ -182,7 +172,7 @@
                     };
                 };
 
-                // TrackballControls
+                // TrackballControls for r121
                 THREE.TrackballControls = function ( object, domElement ) {
                     var _this = this;
                     var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2, TOUCH_ROTATE: 3, TOUCH_ZOOM_PAN: 4 };
@@ -427,7 +417,10 @@
                 THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
                 THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
 
-                console.log('✅ All Three.js components loaded successfully');
+                console.log('✅ All Three.js components loaded for r121');
+                
+                // Signal that everything is ready
+                window.threeJSReady = true;
             } else {
                 console.error('THREE.js not loaded');
             }

@@ -248,7 +248,14 @@ function parseCSVLine(line) {
 function initThreeJS() {
     const container = document.getElementById('container');
     
-    // Wait for all libraries to be loaded with more thorough checking
+    // Wait for the threeJSReady signal
+    if (!window.threeJSReady) {
+        console.log('Waiting for Three.js components to be ready...');
+        setTimeout(initThreeJS, 100);
+        return;
+    }
+    
+    // Double-check all components are available
     if (typeof THREE === 'undefined') {
         console.log('Waiting for THREE.js to load...');
         setTimeout(initThreeJS, 100);
