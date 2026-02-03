@@ -56,8 +56,21 @@ async function init() {
         // Show loading indicator
         document.getElementById('loadingIndicator').style.display = 'block';
         
+        console.log('🚀 Starting application initialization...');
+        
         // Fetch profile data from Google Sheets
         await fetchProfileData();
+        
+        // Verify profile data
+        console.log(`📊 Profile data verification:`);
+        console.log(`   Total profiles loaded: ${profileData.length}`);
+        console.log(`   Expected profiles: 200`);
+        console.log(`   First profile: ${profileData[0]?.name || 'MISSING'}`);
+        console.log(`   Last profile: ${profileData[profileData.length - 1]?.name || 'MISSING'}`);
+        
+        if (profileData.length === 0) {
+            throw new Error('No profiles loaded from Google Sheets');
+        }
         
         // Initialize Three.js scene
         initThreeJS();
@@ -65,8 +78,24 @@ async function init() {
         // Create profile elements
         createElements();
         
+        // Verify elements were created
+        console.log(`🎯 Element creation verification:`);
+        console.log(`   Total elements created: ${objects.length}`);
+        console.log(`   Expected elements: ${profileData.length}`);
+        
+        if (objects.length !== profileData.length) {
+            throw new Error(`Element count mismatch: created ${objects.length}, expected ${profileData.length}`);
+        }
+        
         // Setup layouts
         setupLayouts();
+        
+        // Verify layouts were created
+        console.log(`📐 Layout verification:`);
+        console.log(`   Table targets: ${targets.table.length}`);
+        console.log(`   Sphere targets: ${targets.sphere.length}`);
+        console.log(`   Helix targets: ${targets.helix.length}`);
+        console.log(`   Grid targets: ${targets.grid.length}`);
         
         // Set initial layout
         transform(targets.table, 2000);
@@ -77,13 +106,29 @@ async function init() {
         // Hide loading indicator
         document.getElementById('loadingIndicator').style.display = 'none';
         
-        console.log(`✅ Initialized with ${profileData.length} profiles`);
+        console.log(`✅ Application successfully initialized with ${profileData.length} profiles`);
+        console.log(`🎉 All systems ready - 3D Profile Visualization is live!`);
+        
+        // Final verification summary
+        setTimeout(() => {
+            const visibleElements = document.querySelectorAll('.element');
+            console.log(`🔍 Final verification:`);
+            console.log(`   DOM elements visible: ${visibleElements.length}`);
+            console.log(`   Three.js objects: ${objects.length}`);
+            console.log(`   Profile data: ${profileData.length}`);
+            
+            if (visibleElements.length === profileData.length && objects.length === profileData.length) {
+                console.log(`✅ ALL PROFILES SUCCESSFULLY LOADED AND DISPLAYED`);
+            } else {
+                console.warn(`⚠️ Profile count mismatch detected`);
+            }
+        }, 3000);
         
     } catch (error) {
-        console.error('Error initializing app:', error);
+        console.error('❌ Error initializing app:', error);
         document.getElementById('loadingIndicator').style.display = 'none';
         
-        // Show error message
+        // Show detailed error message
         const errorDiv = document.createElement('div');
         errorDiv.style.cssText = `
             position: fixed;
@@ -102,6 +147,7 @@ async function init() {
             <h3>Unable to Load Data</h3>
             <p>Failed to load profiles from Google Sheets.</p>
             <p><strong>Error:</strong> ${error.message}</p>
+            <p><strong>Profiles loaded:</strong> ${profileData.length}</p>
             <button onclick="location.reload()" style="margin: 10px; padding: 8px 16px; background: white; color: #dc3545; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
         `;
         document.body.appendChild(errorDiv);
@@ -113,7 +159,8 @@ async function fetchProfileData() {
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv';
     
     try {
-        console.log('Fetching data from Google Sheets...');
+        console.log('📡 Fetching data from Google Sheets...');
+        console.log('📍 URL:', csvUrl);
         
         // Try direct fetch first
         let response = await fetch(csvUrl, {
@@ -124,10 +171,14 @@ async function fetchProfileData() {
             }
         });
         
+        console.log('📊 Response status:', response.status, response.statusText);
+        
         if (!response.ok) {
+            console.log('⚠️ Direct fetch failed, trying CORS proxy...');
             // Try with CORS proxy
             const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
             response = await fetch(proxyUrl);
+            console.log('📊 Proxy response status:', response.status, response.statusText);
         }
         
         if (!response.ok) {
@@ -135,7 +186,8 @@ async function fetchProfileData() {
         }
         
         const csvText = await response.text();
-        console.log('CSV data received:', csvText.length, 'characters');
+        console.log('📄 CSV data received:', csvText.length, 'characters');
+        console.log('📝 First 200 characters:', csvText.substring(0, 200));
         
         profileData = parseCSV(csvText);
         
@@ -144,29 +196,47 @@ async function fetchProfileData() {
         }
         
         console.log(`✅ Successfully loaded ${profileData.length} profiles from Google Sheets`);
-        console.log('First profile:', profileData[0]?.name);
-        console.log('Last profile:', profileData[profileData.length - 1]?.name);
+        console.log('👤 First profile:', profileData[0]?.name);
+        console.log('👤 Last profile:', profileData[profileData.length - 1]?.name);
+        
+        // Verify expected profiles
+        if (profileData.length >= 200) {
+            console.log('🎯 Expected profile count (200+) achieved');
+        } else {
+            console.warn(`⚠️ Profile count (${profileData.length}) is less than expected (200)`);
+        }
+        
+        // Sample a few profiles for verification
+        console.log('📋 Profile sample verification:');
+        for (let i = 0; i < Math.min(5, profileData.length); i++) {
+            const profile = profileData[i];
+            console.log(`   ${i + 1}. ${profile.name} (Age: ${profile.age}, Country: ${profile.country}, Net Worth: $${profile.netWorth})`);
+        }
         
     } catch (error) {
-        console.error('Error fetching profile data:', error);
+        console.error('❌ Error fetching profile data:', error);
         throw error;
     }
 }
 
 // Parse CSV data into profile objects
 function parseCSV(csvText) {
+    console.log('🔍 Starting CSV parsing...');
+    
     // Check if we got HTML instead of CSV
     if (csvText.includes('<html>') || csvText.includes('<!DOCTYPE') || csvText.includes('kasari-software')) {
         throw new Error('Google Sheet is not properly published as CSV format');
     }
     
     const lines = csvText.split('\n').filter(line => line.trim());
+    console.log(`📊 CSV lines found: ${lines.length}`);
+    
     if (lines.length < 2) {
         throw new Error(`CSV has insufficient data - only ${lines.length} lines`);
     }
     
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    console.log('CSV Headers:', headers);
+    console.log('📋 CSV Headers:', headers);
     
     // Find column indices
     const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name'));
@@ -176,15 +246,27 @@ function parseCSV(csvText) {
     const interestIndex = headers.findIndex(h => h.toLowerCase().includes('interest'));
     const netWorthIndex = headers.findIndex(h => h.toLowerCase().includes('worth') || h.toLowerCase().includes('net'));
     
+    console.log('🎯 Column mapping:');
+    console.log(`   Name: ${nameIndex >= 0 ? headers[nameIndex] : 'NOT FOUND'} (index: ${nameIndex})`);
+    console.log(`   Photo: ${photoIndex >= 0 ? headers[photoIndex] : 'NOT FOUND'} (index: ${photoIndex})`);
+    console.log(`   Age: ${ageIndex >= 0 ? headers[ageIndex] : 'NOT FOUND'} (index: ${ageIndex})`);
+    console.log(`   Country: ${countryIndex >= 0 ? headers[countryIndex] : 'NOT FOUND'} (index: ${countryIndex})`);
+    console.log(`   Interest: ${interestIndex >= 0 ? headers[interestIndex] : 'NOT FOUND'} (index: ${interestIndex})`);
+    console.log(`   Net Worth: ${netWorthIndex >= 0 ? headers[netWorthIndex] : 'NOT FOUND'} (index: ${netWorthIndex})`);
+    
     if (nameIndex === -1 || ageIndex === -1 || countryIndex === -1) {
         throw new Error('CSV missing required headers: Name, Age, Country');
     }
     
     const profiles = [];
+    let skippedRows = 0;
     
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line) continue;
+        if (!line) {
+            skippedRows++;
+            continue;
+        }
         
         const values = parseCSVLine(line);
         
@@ -210,14 +292,39 @@ function parseCSV(csvText) {
                 interest,
                 netWorth
             });
+        } else {
+            skippedRows++;
+            console.warn(`⚠️ Skipping row ${i}: insufficient data (${values.length} columns)`);
         }
     }
     
     console.log(`✅ Parsed ${profiles.length} valid profiles`);
+    console.log(`📊 Parsing summary:`);
+    console.log(`   Total rows processed: ${lines.length - 1}`);
+    console.log(`   Valid profiles: ${profiles.length}`);
+    console.log(`   Skipped rows: ${skippedRows}`);
+    
     if (profiles.length > 0) {
-        console.log('First profile parsed:', profiles[0].name);
-        console.log('Last profile parsed:', profiles[profiles.length - 1].name);
+        console.log('👤 First profile parsed:', profiles[0].name);
+        console.log('👤 Last profile parsed:', profiles[profiles.length - 1].name);
+        
+        // Verify specific profiles
+        const leeProfile = profiles.find(p => p.name.toLowerCase().includes('lee siew suan'));
+        const collenProfile = profiles.find(p => p.name.toLowerCase().includes('collen mcclintock'));
+        
+        if (leeProfile) {
+            console.log('✅ Found Lee Siew Suan at index:', profiles.indexOf(leeProfile));
+        } else {
+            console.warn('⚠️ Lee Siew Suan not found in profiles');
+        }
+        
+        if (collenProfile) {
+            console.log('✅ Found Collen McClintock at index:', profiles.indexOf(collenProfile));
+        } else {
+            console.warn('⚠️ Collen McClintock not found in profiles');
+        }
     }
+    
     return profiles;
 }
 
@@ -310,19 +417,22 @@ function initThreeJS() {
 
 // Create profile elements
 function createElements() {
-    console.log(`Creating ${profileData.length} profile elements...`);
+    console.log(`🎨 Creating ${profileData.length} profile elements...`);
     
     // Double-check that CSS3DObject is available
     if (typeof THREE.CSS3DObject === 'undefined') {
         throw new Error('THREE.CSS3DObject is not available. Please check Three.js loading.');
     }
     
+    let successCount = 0;
+    let errorCount = 0;
+    
     for (let i = 0; i < profileData.length; i++) {
         const profile = profileData[i];
         
         // Log first and last few profiles for verification
-        if (i < 3 || i >= profileData.length - 3) {
-            console.log(`Profile ${i + 1}: ${profile.name}`);
+        if (i < 5 || i >= profileData.length - 5) {
+            console.log(`👤 Profile ${i + 1}: ${profile.name} (${profile.country})`);
         }
         
         try {
@@ -368,14 +478,35 @@ function createElements() {
             
             scene.add(objectCSS);
             objects.push(objectCSS);
+            successCount++;
             
         } catch (error) {
-            console.error(`Error creating element ${i + 1} (${profile.name}):`, error);
+            errorCount++;
+            console.error(`❌ Error creating element ${i + 1} (${profile.name}):`, error);
             throw error;
         }
     }
     
-    console.log(`✅ Created ${objects.length} profile elements successfully`);
+    console.log(`✅ Element creation completed:`);
+    console.log(`   Successfully created: ${successCount}`);
+    console.log(`   Errors: ${errorCount}`);
+    console.log(`   Total objects in scene: ${objects.length}`);
+    
+    // Verify specific profiles were created
+    const firstElement = objects[0];
+    const lastElement = objects[objects.length - 1];
+    
+    if (firstElement && firstElement.element) {
+        const firstName = firstElement.element.getAttribute('data-name');
+        console.log(`🎯 First element: ${firstName}`);
+    }
+    
+    if (lastElement && lastElement.element) {
+        const lastName = lastElement.element.getAttribute('data-name');
+        console.log(`🎯 Last element: ${lastName}`);
+    }
+    
+    console.log(`🎉 Created ${objects.length} profile elements successfully`);
 }
 
 // Setup layout targets
