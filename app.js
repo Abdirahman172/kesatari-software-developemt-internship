@@ -248,6 +248,15 @@ function parseCSVLine(line) {
 function initThreeJS() {
     const container = document.getElementById('container');
     
+    // Wait for all libraries to be loaded
+    if (typeof THREE === 'undefined' || typeof THREE.CSS3DRenderer === 'undefined' || typeof THREE.TrackballControls === 'undefined') {
+        console.log('Waiting for Three.js libraries to load...');
+        setTimeout(initThreeJS, 100);
+        return;
+    }
+    
+    console.log('✅ All Three.js libraries loaded, initializing scene...');
+    
     // Create camera
     camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 3000;
@@ -269,6 +278,8 @@ function initThreeJS() {
     
     // Handle window resize
     window.addEventListener('resize', onWindowResize);
+    
+    console.log('✅ Three.js scene initialized successfully');
 }
 
 // Create profile elements
@@ -411,6 +422,13 @@ function setupLayouts() {
 
 // Transform to target layout
 function transform(targets, duration) {
+    // Wait for TWEEN to be available
+    if (typeof TWEEN === 'undefined') {
+        console.log('Waiting for TWEEN.js to load...');
+        setTimeout(() => transform(targets, duration), 100);
+        return;
+    }
+    
     TWEEN.removeAll();
     
     for (let i = 0; i < objects.length; i++) {
@@ -483,8 +501,12 @@ function render() {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
-    TWEEN.update();
-    controls.update();
+    if (typeof TWEEN !== 'undefined') {
+        TWEEN.update();
+    }
+    if (controls) {
+        controls.update();
+    }
 }
 
 // Handle window resize
@@ -495,10 +517,8 @@ function onWindowResize() {
     render();
 }
 
-// Include TWEEN.js for smooth animations
-const script = document.createElement('script');
-script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js';
-script.onload = () => {
-    console.log('✅ TWEEN.js loaded');
-};
-document.head.appendChild(script);
+// Check for pending response when script loads
+if (window.pendingCredentialResponse) {
+    appHandleCredentialResponse(window.pendingCredentialResponse);
+    window.pendingCredentialResponse = null;
+}
