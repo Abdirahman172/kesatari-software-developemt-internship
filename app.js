@@ -248,43 +248,67 @@ function parseCSVLine(line) {
 function initThreeJS() {
     const container = document.getElementById('container');
     
-    // Wait for all libraries to be loaded
-    if (typeof THREE === 'undefined' || typeof THREE.CSS3DRenderer === 'undefined' || typeof THREE.TrackballControls === 'undefined') {
-        console.log('Waiting for Three.js libraries to load...');
+    // Wait for all libraries to be loaded with more thorough checking
+    if (typeof THREE === 'undefined') {
+        console.log('Waiting for THREE.js to load...');
+        setTimeout(initThreeJS, 100);
+        return;
+    }
+    
+    if (typeof THREE.CSS3DRenderer === 'undefined') {
+        console.log('Waiting for CSS3DRenderer to load...');
+        setTimeout(initThreeJS, 100);
+        return;
+    }
+    
+    if (typeof THREE.TrackballControls === 'undefined') {
+        console.log('Waiting for TrackballControls to load...');
         setTimeout(initThreeJS, 100);
         return;
     }
     
     console.log('✅ All Three.js libraries loaded, initializing scene...');
+    console.log('THREE.js version:', THREE.REVISION);
     
-    // Create camera
-    camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.z = 3000;
-    
-    // Create scene
-    scene = new THREE.Scene();
-    
-    // Create renderer
-    renderer = new THREE.CSS3DRenderer();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(renderer.domElement);
-    
-    // Create controls
-    controls = new THREE.TrackballControls(camera, renderer.domElement);
-    controls.rotateSpeed = 0.5;
-    controls.minDistance = 500;
-    controls.maxDistance = 6000;
-    controls.addEventListener('change', render);
-    
-    // Handle window resize
-    window.addEventListener('resize', onWindowResize);
-    
-    console.log('✅ Three.js scene initialized successfully');
+    try {
+        // Create camera
+        camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.z = 3000;
+        
+        // Create scene
+        scene = new THREE.Scene();
+        
+        // Create renderer
+        renderer = new THREE.CSS3DRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+        
+        // Create controls
+        controls = new THREE.TrackballControls(camera, renderer.domElement);
+        controls.rotateSpeed = 0.5;
+        controls.minDistance = 500;
+        controls.maxDistance = 6000;
+        controls.addEventListener('change', render);
+        
+        // Handle window resize
+        window.addEventListener('resize', onWindowResize);
+        
+        console.log('✅ Three.js scene initialized successfully');
+        
+    } catch (error) {
+        console.error('Error initializing Three.js scene:', error);
+        throw error;
+    }
 }
 
 // Create profile elements
 function createElements() {
     console.log(`Creating ${profileData.length} profile elements...`);
+    
+    // Double-check that CSS3DObject is available
+    if (typeof THREE.CSS3DObject === 'undefined') {
+        throw new Error('THREE.CSS3DObject is not available. Please check Three.js loading.');
+    }
     
     for (let i = 0; i < profileData.length; i++) {
         const profile = profileData[i];
@@ -294,51 +318,57 @@ function createElements() {
             console.log(`Profile ${i + 1}: ${profile.name}`);
         }
         
-        // Create element div
-        const element = document.createElement('div');
-        element.className = 'element';
-        element.setAttribute('data-index', i);
-        element.setAttribute('data-name', profile.name);
-        
-        // Determine net worth color class
-        let networthClass = 'networth-low';
-        if (profile.netWorth > 200000) {
-            networthClass = 'networth-high';
-        } else if (profile.netWorth > 100000) {
-            networthClass = 'networth-medium';
+        try {
+            // Create element div
+            const element = document.createElement('div');
+            element.className = 'element';
+            element.setAttribute('data-index', i);
+            element.setAttribute('data-name', profile.name);
+            
+            // Determine net worth color class
+            let networthClass = 'networth-low';
+            if (profile.netWorth > 200000) {
+                networthClass = 'networth-high';
+            } else if (profile.netWorth > 100000) {
+                networthClass = 'networth-medium';
+            }
+            element.classList.add(networthClass);
+            
+            // Format net worth
+            const formattedNetWorth = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(profile.netWorth);
+            
+            // Create element content
+            element.innerHTML = `
+                <div class="number">${i + 1}</div>
+                <img src="${profile.photo}" alt="${profile.name}" class="photo" onerror="this.src='https://via.placeholder.com/60x60/0,127,127/fff?text=${profile.name.charAt(0)}'">
+                <div class="name">${profile.name}</div>
+                <div class="age">Age: ${profile.age}</div>
+                <div class="country">${profile.country}</div>
+                <div class="interest">${profile.interest}</div>
+                <div class="networth">${formattedNetWorth}</div>
+            `;
+            
+            // Create CSS3D object with proper error handling
+            const objectCSS = new THREE.CSS3DObject(element);
+            objectCSS.position.x = Math.random() * 4000 - 2000;
+            objectCSS.position.y = Math.random() * 4000 - 2000;
+            objectCSS.position.z = Math.random() * 4000 - 2000;
+            
+            scene.add(objectCSS);
+            objects.push(objectCSS);
+            
+        } catch (error) {
+            console.error(`Error creating element ${i + 1} (${profile.name}):`, error);
+            throw error;
         }
-        element.classList.add(networthClass);
-        
-        // Format net worth
-        const formattedNetWorth = new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(profile.netWorth);
-        
-        // Create element content
-        element.innerHTML = `
-            <div class="number">${i + 1}</div>
-            <img src="${profile.photo}" alt="${profile.name}" class="photo" onerror="this.src='https://via.placeholder.com/60x60/0,127,127/fff?text=${profile.name.charAt(0)}'">
-            <div class="name">${profile.name}</div>
-            <div class="age">Age: ${profile.age}</div>
-            <div class="country">${profile.country}</div>
-            <div class="interest">${profile.interest}</div>
-            <div class="networth">${formattedNetWorth}</div>
-        `;
-        
-        // Create CSS3D object
-        const objectCSS = new THREE.CSS3DObject(element);
-        objectCSS.position.x = Math.random() * 4000 - 2000;
-        objectCSS.position.y = Math.random() * 4000 - 2000;
-        objectCSS.position.z = Math.random() * 4000 - 2000;
-        
-        scene.add(objectCSS);
-        objects.push(objectCSS);
     }
     
-    console.log(`✅ Created ${objects.length} profile elements`);
+    console.log(`✅ Created ${objects.length} profile elements successfully`);
 }
 
 // Setup layout targets
