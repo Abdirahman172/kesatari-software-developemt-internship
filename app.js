@@ -1,4 +1,4 @@
-// EXACT Three.js Periodic Table Implementation with Profile Data
+// Simple Working 3D Profile Visualization
 
 // Global variables
 let camera, scene, renderer, controls;
@@ -53,24 +53,17 @@ function logout() {
 // Initialize the application
 async function init() {
     try {
+        console.log('🚀 Starting application...');
+        
         // Show loading indicator
         document.getElementById('loadingIndicator').style.display = 'block';
         
-        console.log('🚀 Starting application initialization...');
-        
         // Fetch profile data from Google Sheets
         await fetchProfileData();
+        console.log(`✅ Loaded ${profileData.length} profiles`);
         
-        // Verify profile data
-        console.log(`📊 Profile data verification:`);
-        console.log(`   Total profiles loaded: ${profileData.length}`);
-        console.log(`   Expected profiles: 200`);
-        console.log(`   First profile: ${profileData[0]?.name || 'MISSING'}`);
-        console.log(`   Last profile: ${profileData[profileData.length - 1]?.name || 'MISSING'}`);
-        
-        if (profileData.length === 0) {
-            throw new Error('No profiles loaded from Google Sheets');
-        }
+        // Wait for Three.js to be ready
+        await waitForThreeJS();
         
         // Initialize Three.js scene
         initThreeJS();
@@ -78,24 +71,8 @@ async function init() {
         // Create profile elements
         createElements();
         
-        // Verify elements were created
-        console.log(`🎯 Element creation verification:`);
-        console.log(`   Total elements created: ${objects.length}`);
-        console.log(`   Expected elements: ${profileData.length}`);
-        
-        if (objects.length !== profileData.length) {
-            throw new Error(`Element count mismatch: created ${objects.length}, expected ${profileData.length}`);
-        }
-        
         // Setup layouts
         setupLayouts();
-        
-        // Verify layouts were created
-        console.log(`📐 Layout verification:`);
-        console.log(`   Table targets: ${targets.table.length}`);
-        console.log(`   Sphere targets: ${targets.sphere.length}`);
-        console.log(`   Helix targets: ${targets.helix.length}`);
-        console.log(`   Grid targets: ${targets.grid.length}`);
         
         // Set initial layout
         transform(targets.table, 2000);
@@ -106,52 +83,31 @@ async function init() {
         // Hide loading indicator
         document.getElementById('loadingIndicator').style.display = 'none';
         
-        console.log(`✅ Application successfully initialized with ${profileData.length} profiles`);
-        console.log(`🎉 All systems ready - 3D Profile Visualization is live!`);
-        
-        // Final verification summary
-        setTimeout(() => {
-            const visibleElements = document.querySelectorAll('.element');
-            console.log(`🔍 Final verification:`);
-            console.log(`   DOM elements visible: ${visibleElements.length}`);
-            console.log(`   Three.js objects: ${objects.length}`);
-            console.log(`   Profile data: ${profileData.length}`);
-            
-            if (visibleElements.length === profileData.length && objects.length === profileData.length) {
-                console.log(`✅ ALL PROFILES SUCCESSFULLY LOADED AND DISPLAYED`);
-            } else {
-                console.warn(`⚠️ Profile count mismatch detected`);
-            }
-        }, 3000);
+        console.log(`🎉 Application ready with ${profileData.length} profiles!`);
         
     } catch (error) {
         console.error('❌ Error initializing app:', error);
         document.getElementById('loadingIndicator').style.display = 'none';
         
-        // Show detailed error message
-        const errorDiv = document.createElement('div');
-        errorDiv.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            z-index: 2000;
-            max-width: 500px;
-        `;
-        errorDiv.innerHTML = `
-            <h3>Unable to Load Data</h3>
-            <p>Failed to load profiles from Google Sheets.</p>
-            <p><strong>Error:</strong> ${error.message}</p>
-            <p><strong>Profiles loaded:</strong> ${profileData.length}</p>
-            <button onclick="location.reload()" style="margin: 10px; padding: 8px 16px; background: white; color: #dc3545; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-        `;
-        document.body.appendChild(errorDiv);
+        // Show error message
+        showError(error.message);
     }
+}
+
+// Wait for Three.js to be ready
+function waitForThreeJS() {
+    return new Promise((resolve) => {
+        function check() {
+            if (typeof THREE !== 'undefined' && typeof TWEEN !== 'undefined') {
+                console.log('✅ Three.js and TWEEN ready');
+                resolve();
+            } else {
+                console.log('⏳ Waiting for Three.js...');
+                setTimeout(check, 100);
+            }
+        }
+        check();
+    });
 }
 
 // Fetch profile data from Google Sheets
@@ -160,7 +116,6 @@ async function fetchProfileData() {
     
     try {
         console.log('📡 Fetching data from Google Sheets...');
-        console.log('📍 URL:', csvUrl);
         
         // Try direct fetch first
         let response = await fetch(csvUrl, {
@@ -171,14 +126,10 @@ async function fetchProfileData() {
             }
         });
         
-        console.log('📊 Response status:', response.status, response.statusText);
-        
         if (!response.ok) {
             console.log('⚠️ Direct fetch failed, trying CORS proxy...');
-            // Try with CORS proxy
             const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
             response = await fetch(proxyUrl);
-            console.log('📊 Proxy response status:', response.status, response.statusText);
         }
         
         if (!response.ok) {
@@ -187,7 +138,6 @@ async function fetchProfileData() {
         
         const csvText = await response.text();
         console.log('📄 CSV data received:', csvText.length, 'characters');
-        console.log('📝 First 200 characters:', csvText.substring(0, 200));
         
         profileData = parseCSV(csvText);
         
@@ -195,23 +145,9 @@ async function fetchProfileData() {
             throw new Error('No valid profiles found in CSV data');
         }
         
-        console.log(`✅ Successfully loaded ${profileData.length} profiles from Google Sheets`);
+        console.log(`✅ Successfully loaded ${profileData.length} profiles`);
         console.log('👤 First profile:', profileData[0]?.name);
         console.log('👤 Last profile:', profileData[profileData.length - 1]?.name);
-        
-        // Verify expected profiles
-        if (profileData.length >= 200) {
-            console.log('🎯 Expected profile count (200+) achieved');
-        } else {
-            console.warn(`⚠️ Profile count (${profileData.length}) is less than expected (200)`);
-        }
-        
-        // Sample a few profiles for verification
-        console.log('📋 Profile sample verification:');
-        for (let i = 0; i < Math.min(5, profileData.length); i++) {
-            const profile = profileData[i];
-            console.log(`   ${i + 1}. ${profile.name} (Age: ${profile.age}, Country: ${profile.country}, Net Worth: $${profile.netWorth})`);
-        }
         
     } catch (error) {
         console.error('❌ Error fetching profile data:', error);
@@ -221,16 +157,14 @@ async function fetchProfileData() {
 
 // Parse CSV data into profile objects
 function parseCSV(csvText) {
-    console.log('🔍 Starting CSV parsing...');
+    console.log('🔍 Parsing CSV data...');
     
     // Check if we got HTML instead of CSV
-    if (csvText.includes('<html>') || csvText.includes('<!DOCTYPE') || csvText.includes('kasari-software')) {
+    if (csvText.includes('<html>') || csvText.includes('<!DOCTYPE')) {
         throw new Error('Google Sheet is not properly published as CSV format');
     }
     
     const lines = csvText.split('\n').filter(line => line.trim());
-    console.log(`📊 CSV lines found: ${lines.length}`);
-    
     if (lines.length < 2) {
         throw new Error(`CSV has insufficient data - only ${lines.length} lines`);
     }
@@ -246,27 +180,15 @@ function parseCSV(csvText) {
     const interestIndex = headers.findIndex(h => h.toLowerCase().includes('interest'));
     const netWorthIndex = headers.findIndex(h => h.toLowerCase().includes('worth') || h.toLowerCase().includes('net'));
     
-    console.log('🎯 Column mapping:');
-    console.log(`   Name: ${nameIndex >= 0 ? headers[nameIndex] : 'NOT FOUND'} (index: ${nameIndex})`);
-    console.log(`   Photo: ${photoIndex >= 0 ? headers[photoIndex] : 'NOT FOUND'} (index: ${photoIndex})`);
-    console.log(`   Age: ${ageIndex >= 0 ? headers[ageIndex] : 'NOT FOUND'} (index: ${ageIndex})`);
-    console.log(`   Country: ${countryIndex >= 0 ? headers[countryIndex] : 'NOT FOUND'} (index: ${countryIndex})`);
-    console.log(`   Interest: ${interestIndex >= 0 ? headers[interestIndex] : 'NOT FOUND'} (index: ${interestIndex})`);
-    console.log(`   Net Worth: ${netWorthIndex >= 0 ? headers[netWorthIndex] : 'NOT FOUND'} (index: ${netWorthIndex})`);
-    
     if (nameIndex === -1 || ageIndex === -1 || countryIndex === -1) {
         throw new Error('CSV missing required headers: Name, Age, Country');
     }
     
     const profiles = [];
-    let skippedRows = 0;
     
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line) {
-            skippedRows++;
-            continue;
-        }
+        if (!line) continue;
         
         const values = parseCSVLine(line);
         
@@ -292,39 +214,10 @@ function parseCSV(csvText) {
                 interest,
                 netWorth
             });
-        } else {
-            skippedRows++;
-            console.warn(`⚠️ Skipping row ${i}: insufficient data (${values.length} columns)`);
         }
     }
     
     console.log(`✅ Parsed ${profiles.length} valid profiles`);
-    console.log(`📊 Parsing summary:`);
-    console.log(`   Total rows processed: ${lines.length - 1}`);
-    console.log(`   Valid profiles: ${profiles.length}`);
-    console.log(`   Skipped rows: ${skippedRows}`);
-    
-    if (profiles.length > 0) {
-        console.log('👤 First profile parsed:', profiles[0].name);
-        console.log('👤 Last profile parsed:', profiles[profiles.length - 1].name);
-        
-        // Verify specific profiles
-        const leeProfile = profiles.find(p => p.name.toLowerCase().includes('lee siew suan'));
-        const collenProfile = profiles.find(p => p.name.toLowerCase().includes('collen mcclintock'));
-        
-        if (leeProfile) {
-            console.log('✅ Found Lee Siew Suan at index:', profiles.indexOf(leeProfile));
-        } else {
-            console.warn('⚠️ Lee Siew Suan not found in profiles');
-        }
-        
-        if (collenProfile) {
-            console.log('✅ Found Collen McClintock at index:', profiles.indexOf(collenProfile));
-        } else {
-            console.warn('⚠️ Collen McClintock not found in profiles');
-        }
-    }
-    
     return profiles;
 }
 
@@ -353,183 +246,107 @@ function parseCSVLine(line) {
 
 // Initialize Three.js scene
 function initThreeJS() {
+    console.log('🎨 Initializing Three.js scene...');
+    
     const container = document.getElementById('container');
     
-    // Wait for the threeJSReady signal
-    if (!window.threeJSReady) {
-        console.log('Waiting for Three.js components to be ready...');
-        setTimeout(initThreeJS, 100);
-        return;
-    }
+    // Create camera
+    camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.z = 3000;
     
-    // Double-check all components are available
-    if (typeof THREE === 'undefined') {
-        console.log('Waiting for THREE.js to load...');
-        setTimeout(initThreeJS, 100);
-        return;
-    }
+    // Create scene
+    scene = new THREE.Scene();
     
-    if (typeof THREE.CSS3DRenderer === 'undefined') {
-        console.log('Waiting for CSS3DRenderer to load...');
-        setTimeout(initThreeJS, 100);
-        return;
-    }
+    // Create renderer using CSS3DRenderer
+    renderer = new THREE.CSS3DRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.domElement.style.position = 'absolute';
+    container.appendChild(renderer.domElement);
     
-    if (typeof THREE.TrackballControls === 'undefined') {
-        console.log('Waiting for TrackballControls to load...');
-        setTimeout(initThreeJS, 100);
-        return;
-    }
+    // Create controls
+    controls = new THREE.TrackballControls(camera, renderer.domElement);
+    controls.rotateSpeed = 0.5;
+    controls.minDistance = 500;
+    controls.maxDistance = 6000;
+    controls.addEventListener('change', render);
     
-    console.log('✅ All Three.js libraries loaded, initializing scene...');
-    console.log('THREE.js version:', THREE.REVISION);
+    // Handle window resize
+    window.addEventListener('resize', onWindowResize);
     
-    try {
-        // Create camera
-        camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
-        camera.position.z = 3000;
-        
-        // Create scene
-        scene = new THREE.Scene();
-        
-        // Create renderer
-        renderer = new THREE.CSS3DRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
-        
-        // Create controls
-        controls = new THREE.TrackballControls(camera, renderer.domElement);
-        controls.rotateSpeed = 0.5;
-        controls.minDistance = 500;
-        controls.maxDistance = 6000;
-        controls.addEventListener('change', render);
-        
-        // Handle window resize
-        window.addEventListener('resize', onWindowResize);
-        
-        console.log('✅ Three.js scene initialized successfully');
-        
-    } catch (error) {
-        console.error('Error initializing Three.js scene:', error);
-        throw error;
-    }
+    console.log('✅ Three.js scene initialized');
 }
 
 // Create profile elements
 function createElements() {
     console.log(`🎨 Creating ${profileData.length} profile elements...`);
     
-    // Double-check that CSS3DObject is available
-    if (typeof THREE.CSS3DObject === 'undefined') {
-        throw new Error('THREE.CSS3DObject is not available. Please check Three.js loading.');
-    }
-    
-    let successCount = 0;
-    let errorCount = 0;
-    
     for (let i = 0; i < profileData.length; i++) {
         const profile = profileData[i];
         
-        // Log first and last few profiles for verification
-        if (i < 5 || i >= profileData.length - 5) {
-            console.log(`👤 Profile ${i + 1}: ${profile.name} (${profile.country})`);
-        }
+        // Create element div
+        const element = document.createElement('div');
+        element.className = 'element';
+        element.setAttribute('data-index', i);
+        element.setAttribute('data-name', profile.name);
         
-        try {
-            // Create element div
-            const element = document.createElement('div');
-            element.className = 'element';
-            element.setAttribute('data-index', i);
-            element.setAttribute('data-name', profile.name);
-            
-            // Determine net worth color class
-            let networthClass = 'networth-low';
-            if (profile.netWorth > 200000) {
-                networthClass = 'networth-high';
-            } else if (profile.netWorth > 100000) {
-                networthClass = 'networth-medium';
-            }
-            element.classList.add(networthClass);
-            
-            // Format net worth
-            const formattedNetWorth = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(profile.netWorth);
-            
-            // Create element content
-            element.innerHTML = `
-                <div class="number">${i + 1}</div>
-                <img src="${profile.photo}" alt="${profile.name}" class="photo" onerror="this.src='https://via.placeholder.com/60x60/0,127,127/fff?text=${profile.name.charAt(0)}'">
-                <div class="name">${profile.name}</div>
-                <div class="age">Age: ${profile.age}</div>
-                <div class="country">${profile.country}</div>
-                <div class="interest">${profile.interest}</div>
-                <div class="networth">${formattedNetWorth}</div>
-            `;
-            
-            // Create CSS3D object with proper error handling
-            const objectCSS = new THREE.CSS3DObject(element);
-            objectCSS.position.x = Math.random() * 4000 - 2000;
-            objectCSS.position.y = Math.random() * 4000 - 2000;
-            objectCSS.position.z = Math.random() * 4000 - 2000;
-            
-            scene.add(objectCSS);
-            objects.push(objectCSS);
-            successCount++;
-            
-        } catch (error) {
-            errorCount++;
-            console.error(`❌ Error creating element ${i + 1} (${profile.name}):`, error);
-            throw error;
+        // Determine net worth color class
+        let networthClass = 'networth-low';
+        if (profile.netWorth > 200000) {
+            networthClass = 'networth-high';
+        } else if (profile.netWorth > 100000) {
+            networthClass = 'networth-medium';
         }
+        element.classList.add(networthClass);
+        
+        // Format net worth
+        const formattedNetWorth = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(profile.netWorth);
+        
+        // Create element content
+        element.innerHTML = `
+            <div class="number">${i + 1}</div>
+            <img src="${profile.photo}" alt="${profile.name}" class="photo" onerror="this.src='https://via.placeholder.com/60x60/0,127,127/fff?text=${profile.name.charAt(0)}'">
+            <div class="name">${profile.name}</div>
+            <div class="age">Age: ${profile.age}</div>
+            <div class="country">${profile.country}</div>
+            <div class="interest">${profile.interest}</div>
+            <div class="networth">${formattedNetWorth}</div>
+        `;
+        
+        // Create CSS3D object
+        const objectCSS = new THREE.CSS3DObject(element);
+        objectCSS.position.x = Math.random() * 4000 - 2000;
+        objectCSS.position.y = Math.random() * 4000 - 2000;
+        objectCSS.position.z = Math.random() * 4000 - 2000;
+        
+        scene.add(objectCSS);
+        objects.push(objectCSS);
     }
     
-    console.log(`✅ Element creation completed:`);
-    console.log(`   Successfully created: ${successCount}`);
-    console.log(`   Errors: ${errorCount}`);
-    console.log(`   Total objects in scene: ${objects.length}`);
-    
-    // Verify specific profiles were created
-    const firstElement = objects[0];
-    const lastElement = objects[objects.length - 1];
-    
-    if (firstElement && firstElement.element) {
-        const firstName = firstElement.element.getAttribute('data-name');
-        console.log(`🎯 First element: ${firstName}`);
-    }
-    
-    if (lastElement && lastElement.element) {
-        const lastName = lastElement.element.getAttribute('data-name');
-        console.log(`🎯 Last element: ${lastName}`);
-    }
-    
-    console.log(`🎉 Created ${objects.length} profile elements successfully`);
+    console.log(`✅ Created ${objects.length} profile elements`);
 }
 
 // Setup layout targets
 function setupLayouts() {
-    // TABLE LAYOUT (20x10) - Sequential ordering: left to right, top to bottom
+    console.log('📐 Setting up layouts...');
+    
+    // TABLE LAYOUT (20x10)
     for (let i = 0; i < objects.length; i++) {
         const object = new THREE.Object3D();
         
-        // Calculate position: 20 columns, sequential row-by-row
-        const col = i % 20;  // 0-19 columns
-        const row = Math.floor(i / 20);  // Row number
+        const col = i % 20;
+        const row = Math.floor(i / 20);
         
-        // Position calculation for proper spacing
-        object.position.x = col * 140 - 1330;  // Center the grid
-        object.position.y = -(row * 180) + 990;  // Top to bottom
+        object.position.x = col * 140 - 1330;
+        object.position.y = -(row * 180) + 990;
         object.position.z = 0;
         
         targets.table.push(object);
     }
-    
-    console.log(`✅ Table layout created for ${objects.length} profiles`);
-    console.log('First profile position:', targets.table[0]?.position);
-    console.log('Last profile position:', targets.table[objects.length - 1]?.position);
     
     // SPHERE LAYOUT
     const radius = 800;
@@ -586,17 +403,12 @@ function setupLayouts() {
         
         targets.grid.push(object);
     }
+    
+    console.log('✅ Layouts setup complete');
 }
 
 // Transform to target layout
 function transform(targets, duration) {
-    // Wait for TWEEN to be available
-    if (typeof TWEEN === 'undefined') {
-        console.log('Waiting for TWEEN.js to load...');
-        setTimeout(() => transform(targets, duration), 100);
-        return;
-    }
-    
     TWEEN.removeAll();
     
     for (let i = 0; i < objects.length; i++) {
@@ -669,12 +481,8 @@ function render() {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
-    if (typeof TWEEN !== 'undefined') {
-        TWEEN.update();
-    }
-    if (controls) {
-        controls.update();
-    }
+    TWEEN.update();
+    controls.update();
 }
 
 // Handle window resize
@@ -685,8 +493,295 @@ function onWindowResize() {
     render();
 }
 
-// Check for pending response when script loads
-if (window.pendingCredentialResponse) {
-    appHandleCredentialResponse(window.pendingCredentialResponse);
-    window.pendingCredentialResponse = null;
+// Show error message
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+        z-index: 2000;
+        max-width: 500px;
+    `;
+    errorDiv.innerHTML = `
+        <h3>Unable to Load Data</h3>
+        <p>Failed to load profiles from Google Sheets.</p>
+        <p><strong>Error:</strong> ${message}</p>
+        <button onclick="location.reload()" style="margin: 10px; padding: 8px 16px; background: white; color: #dc3545; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+    `;
+    document.body.appendChild(errorDiv);
 }
+
+// Add CSS3DRenderer and TrackballControls to THREE
+window.addEventListener('load', function() {
+    if (typeof THREE !== 'undefined') {
+        console.log('✅ THREE.js loaded, adding CSS3D components...');
+        
+        // CSS3DObject
+        THREE.CSS3DObject = function ( element ) {
+            THREE.Object3D.call( this );
+            this.element = element;
+            this.element.style.position = 'absolute';
+            this.element.style.pointerEvents = 'auto';
+        };
+        THREE.CSS3DObject.prototype = Object.create( THREE.Object3D.prototype );
+        THREE.CSS3DObject.prototype.constructor = THREE.CSS3DObject;
+
+        // CSS3DRenderer
+        THREE.CSS3DRenderer = function ( parameters ) {
+            var _this = this;
+            var _width, _height;
+            var _widthHalf, _heightHalf;
+            var matrix = new THREE.Matrix4();
+            var cache = {
+                camera: { fov: 0, style: '' },
+                objects: new WeakMap()
+            };
+            var domElement = document.createElement( 'div' );
+            domElement.style.overflow = 'hidden';
+            this.domElement = domElement;
+            var cameraElement = document.createElement( 'div' );
+            cameraElement.style.WebkitTransformStyle = 'preserve-3d';
+            cameraElement.style.transformStyle = 'preserve-3d';
+            domElement.appendChild( cameraElement );
+
+            this.setSize = function ( width, height ) {
+                _width = width;
+                _height = height;
+                _widthHalf = _width / 2;
+                _heightHalf = _height / 2;
+                domElement.style.width = width + 'px';
+                domElement.style.height = height + 'px';
+                cameraElement.style.width = width + 'px';
+                cameraElement.style.height = height + 'px';
+            };
+
+            var epsilon = function ( value ) {
+                return Math.abs( value ) < 1e-10 ? 0 : value;
+            };
+
+            var getCameraCSSMatrix = function ( matrix ) {
+                var elements = matrix.elements;
+                return 'matrix3d(' +
+                    epsilon( elements[ 0 ] ) + ',' +
+                    epsilon( - elements[ 1 ] ) + ',' +
+                    epsilon( elements[ 2 ] ) + ',' +
+                    epsilon( elements[ 3 ] ) + ',' +
+                    epsilon( elements[ 4 ] ) + ',' +
+                    epsilon( - elements[ 5 ] ) + ',' +
+                    epsilon( elements[ 6 ] ) + ',' +
+                    epsilon( elements[ 7 ] ) + ',' +
+                    epsilon( elements[ 8 ] ) + ',' +
+                    epsilon( - elements[ 9 ] ) + ',' +
+                    epsilon( elements[ 10 ] ) + ',' +
+                    epsilon( elements[ 11 ] ) + ',' +
+                    epsilon( elements[ 12 ] ) + ',' +
+                    epsilon( - elements[ 13 ] ) + ',' +
+                    epsilon( elements[ 14 ] ) + ',' +
+                    epsilon( elements[ 15 ] ) +
+                ')';
+            };
+
+            var getObjectCSSMatrix = function ( matrix, cameraCSSMatrix ) {
+                var elements = matrix.elements;
+                var matrix3d = 'matrix3d(' +
+                    epsilon( elements[ 0 ] ) + ',' +
+                    epsilon( elements[ 1 ] ) + ',' +
+                    epsilon( elements[ 2 ] ) + ',' +
+                    epsilon( elements[ 3 ] ) + ',' +
+                    epsilon( - elements[ 4 ] ) + ',' +
+                    epsilon( - elements[ 5 ] ) + ',' +
+                    epsilon( - elements[ 6 ] ) + ',' +
+                    epsilon( - elements[ 7 ] ) + ',' +
+                    epsilon( elements[ 8 ] ) + ',' +
+                    epsilon( elements[ 9 ] ) + ',' +
+                    epsilon( elements[ 10 ] ) + ',' +
+                    epsilon( elements[ 11 ] ) + ',' +
+                    epsilon( elements[ 12 ] ) + ',' +
+                    epsilon( elements[ 13 ] ) + ',' +
+                    epsilon( elements[ 14 ] ) + ',' +
+                    epsilon( elements[ 15 ] ) +
+                ')';
+                if ( cameraCSSMatrix === 'none' ) {
+                    return 'translate3d(-50%,-50%,0) ' + matrix3d;
+                } else {
+                    return 'translate3d(-50%,-50%,0) ' + matrix3d + ' ' + cameraCSSMatrix;
+                }
+            };
+
+            var renderObject = function ( object, scene, camera, cameraCSSMatrix ) {
+                if ( object instanceof THREE.CSS3DObject ) {
+                    var style = getObjectCSSMatrix( object.matrixWorld, cameraCSSMatrix );
+                    var element = object.element;
+                    var cachedObject = cache.objects.get( object );
+                    if ( cachedObject === undefined || cachedObject.style !== style ) {
+                        element.style.WebkitTransform = style;
+                        element.style.transform = style;
+                        var objectData = { style: style };
+                        cache.objects.set( object, objectData );
+                    }
+                    if ( element.parentNode !== cameraElement ) {
+                        cameraElement.appendChild( element );
+                    }
+                }
+                for ( var i = 0, l = object.children.length; i < l; i ++ ) {
+                    renderObject( object.children[ i ], scene, camera, cameraCSSMatrix );
+                }
+            };
+
+            this.render = function ( scene, camera ) {
+                var fov = camera.projectionMatrix.elements[ 5 ] * _heightHalf;
+                var style = "translate3d(0,0," + fov + "px)" + getCameraCSSMatrix( camera.matrixWorldInverse ) + " translate3d(" + _widthHalf + "px," + _heightHalf + "px, 0)";
+                if ( cache.camera.style !== style ) {
+                    cameraElement.style.WebkitTransform = style;
+                    cameraElement.style.transform = style;
+                    cache.camera.style = style;
+                }
+                renderObject( scene, scene, camera, style );
+            };
+        };
+
+        // TrackballControls
+        THREE.TrackballControls = function ( object, domElement ) {
+            var _this = this;
+            var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2 };
+            this.object = object;
+            this.domElement = ( domElement !== undefined ) ? domElement : document;
+            this.enabled = true;
+            this.screen = { left: 0, top: 0, width: 0, height: 0 };
+            this.rotateSpeed = 1.0;
+            this.zoomSpeed = 1.2;
+            this.panSpeed = 0.3;
+            this.noRotate = false;
+            this.noZoom = false;
+            this.noPan = false;
+            this.staticMoving = false;
+            this.dynamicDampingFactor = 0.2;
+            this.minDistance = 0;
+            this.maxDistance = Infinity;
+            this.target = new THREE.Vector3();
+            var EPS = 0.000001;
+            var lastPosition = new THREE.Vector3();
+            var _state = STATE.NONE,
+            _eye = new THREE.Vector3(),
+            _movePrev = new THREE.Vector2(),
+            _moveCurr = new THREE.Vector2(),
+            _zoomStart = new THREE.Vector2(),
+            _zoomEnd = new THREE.Vector2();
+            this.target0 = this.target.clone();
+            this.position0 = this.object.position.clone();
+            this.up0 = this.object.up.clone();
+
+            this.handleResize = function () {
+                if ( this.domElement === document ) {
+                    this.screen.left = 0;
+                    this.screen.top = 0;
+                    this.screen.width = window.innerWidth;
+                    this.screen.height = window.innerHeight;
+                } else {
+                    var box = this.domElement.getBoundingClientRect();
+                    var d = this.domElement.ownerDocument.documentElement;
+                    this.screen.left = box.left + window.pageXOffset - d.clientLeft;
+                    this.screen.top = box.top + window.pageYOffset - d.clientTop;
+                    this.screen.width = box.width;
+                    this.screen.height = box.height;
+                }
+            };
+
+            this.update = function () {
+                _eye.subVectors( _this.object.position, _this.target );
+                _this.object.position.addVectors( _this.target, _eye );
+                _this.object.lookAt( _this.target );
+                if ( lastPosition.distanceToSquared( _this.object.position ) > EPS ) {
+                    _this.dispatchEvent( { type: 'change' } );
+                    lastPosition.copy( _this.object.position );
+                }
+            };
+
+            function getMouseOnScreen( pageX, pageY ) {
+                var vector = new THREE.Vector2();
+                vector.set(
+                    ( pageX - _this.screen.left ) / _this.screen.width,
+                    ( pageY - _this.screen.top ) / _this.screen.height
+                );
+                return vector;
+            }
+
+            this.addEventListener = THREE.EventDispatcher.prototype.addEventListener;
+            this.hasEventListener = THREE.EventDispatcher.prototype.hasEventListener;
+            this.removeEventListener = THREE.EventDispatcher.prototype.removeEventListener;
+            this.dispatchEvent = THREE.EventDispatcher.prototype.dispatchEvent;
+
+            this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+            this.domElement.addEventListener( 'mousedown', function ( event ) {
+                if ( _this.enabled === false ) return;
+                event.preventDefault();
+                event.stopPropagation();
+                if ( _state === STATE.NONE ) {
+                    _state = event.button;
+                }
+                if ( _state === STATE.ROTATE && ! _this.noRotate ) {
+                    _moveCurr.copy( getMouseOnScreen( event.pageX, event.pageY ) );
+                    _movePrev.copy( _moveCurr );
+                } else if ( _state === STATE.ZOOM && ! _this.noZoom ) {
+                    _zoomStart.copy( getMouseOnScreen( event.pageX, event.pageY ) );
+                    _zoomEnd.copy( _zoomStart );
+                }
+                document.addEventListener( 'mousemove', mousemove, false );
+                document.addEventListener( 'mouseup', mouseup, false );
+            }, false );
+
+            function mousemove( event ) {
+                if ( _this.enabled === false ) return;
+                event.preventDefault();
+                event.stopPropagation();
+                if ( _state === STATE.ROTATE && ! _this.noRotate ) {
+                    _movePrev.copy( _moveCurr );
+                    _moveCurr.copy( getMouseOnScreen( event.pageX, event.pageY ) );
+                } else if ( _state === STATE.ZOOM && ! _this.noZoom ) {
+                    _zoomEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
+                }
+            }
+
+            function mouseup( event ) {
+                if ( _this.enabled === false ) return;
+                event.preventDefault();
+                event.stopPropagation();
+                _state = STATE.NONE;
+                document.removeEventListener( 'mousemove', mousemove );
+                document.removeEventListener( 'mouseup', mouseup );
+            }
+
+            this.domElement.addEventListener( 'mousewheel', mousewheel, false );
+            this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false );
+
+            function mousewheel( event ) {
+                if ( _this.enabled === false ) return;
+                event.preventDefault();
+                event.stopPropagation();
+                var delta = 0;
+                if ( event.wheelDelta ) {
+                    delta = event.wheelDelta / 40;
+                } else if ( event.detail ) {
+                    delta = - event.detail / 3;
+                }
+                _eye.subVectors( _this.object.position, _this.target );
+                _eye.multiplyScalar( 1 - delta * 0.01 );
+                _this.object.position.addVectors( _this.target, _eye );
+                _this.object.lookAt( _this.target );
+            }
+
+            this.handleResize();
+        };
+        THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+        THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
+
+        console.log('✅ CSS3D components added to THREE.js');
+    }
+});
