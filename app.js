@@ -1,13 +1,15 @@
+// EXACT Three.js Periodic Table Implementation with Profile Data
+
 // Global variables
-let scene, camera, renderer, controls;
+let camera, scene, renderer, controls;
 let objects = [];
+let targets = { table: [], sphere: [], helix: [], grid: [] };
 let profileData = [];
-let currentLayout = 'table';
 let isAuthenticated = false;
 
 // Authentication handling
-function handleCredentialResponse(response) {
-    console.log('Login successful');
+function appHandleCredentialResponse(response) {
+    console.log('Login successful:', response);
     isAuthenticated = true;
     
     // Hide login screen and show app
@@ -15,7 +17,17 @@ function handleCredentialResponse(response) {
     document.getElementById('appContainer').style.display = 'block';
     
     // Initialize the 3D visualization
-    initializeApp();
+    init();
+    animate();
+}
+
+// Make the handler globally available
+window.appHandleCredentialResponse = appHandleCredentialResponse;
+
+// Check for pending response when script loads
+if (window.pendingCredentialResponse) {
+    appHandleCredentialResponse(window.pendingCredentialResponse);
+    window.pendingCredentialResponse = null;
 }
 
 // Logout function
@@ -25,7 +37,7 @@ function logout() {
     document.getElementById('appContainer').style.display = 'none';
     
     // Clean up Three.js scene
-    if (renderer) {
+    if (renderer && renderer.domElement) {
         renderer.domElement.remove();
     }
     
@@ -38,28 +50,26 @@ function logout() {
     profileData = [];
 }
 
-// Initialize the main application
-async function initializeApp() {
+// Initialize the application
+async function init() {
     try {
         // Show loading indicator
         document.getElementById('loadingIndicator').style.display = 'block';
         
-        // Fetch data from Google Sheets
+        // Fetch profile data from Google Sheets
         await fetchProfileData();
-        
-        // Check if we have data
-        if (!profileData || profileData.length === 0) {
-            throw new Error('No profile data available');
-        }
         
         // Initialize Three.js scene
         initThreeJS();
         
-        // Create profile cards
-        createProfileCards();
+        // Create profile elements
+        createElements();
         
-        // Set initial layout with proper camera positioning
-        setLayout('table');
+        // Setup layouts
+        setupLayouts();
+        
+        // Set initial layout
+        transform(targets.table, 2000);
         
         // Setup event listeners
         setupEventListeners();
@@ -67,263 +77,75 @@ async function initializeApp() {
         // Hide loading indicator
         document.getElementById('loadingIndicator').style.display = 'none';
         
-        // Update data source indicator
-        document.getElementById('profileCount').textContent = `${profileData.length} profiles loaded`;
-        
-        // Add debug info to UI
-        const debugInfo = document.getElementById('debugInfo');
-        if (debugInfo && profileData.length > 0) {
-            debugInfo.textContent = `Data: ${profileData[0].name} → ${profileData[profileData.length - 1].name}`;
-        }
-        
-
-        
-        // Add debug info for development
-        console.log(`✅ App initialized successfully with ${profileData.length} profiles`);
-        console.log('Sample profiles:', profileData.slice(0, 3));
-        console.log('Profile data summary:', {
-            total: profileData.length,
-            firstProfile: profileData[0],
-            lastProfile: profileData[profileData.length - 1]
-        });
+        console.log(`✅ Initialized with ${profileData.length} profiles`);
         
     } catch (error) {
         console.error('Error initializing app:', error);
-        
-        // Hide loading indicator
         document.getElementById('loadingIndicator').style.display = 'none';
         
-        // Show more specific error message
-        const errorMsg = error.message.includes('fetch') ? 
-            'Unable to load data from Google Sheets. Using sample data instead.' :
-            'Error loading data. Using sample data instead.';
-            
-        // Create a temporary notification
-        const notification = document.createElement('div');
-        notification.style.cssText = `
+        // Show error message
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 193, 7, 0.9);
-            color: #333;
-            padding: 15px 20px;
-            border-radius: 5px;
-            z-index: 1000;
-            max-width: 300px;
-            font-size: 14px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 2000;
+            max-width: 500px;
         `;
-        notification.textContent = errorMsg;
-        document.body.appendChild(notification);
-        
-        // Remove notification after 5 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 5000);
-        
-        // Try to continue without sample data - only use Google Sheets
-        try {
-            if (!profileData || profileData.length === 0) {
-                throw new Error('No profile data available from Google Sheets');
-            }
-            
-            initThreeJS();
-            createProfileCards();
-            setLayout('table');
-            setupEventListeners();
-            
-        } catch (fallbackError) {
-            console.error('Failed to initialize with fallback data:', fallbackError);
-            
-            // Show error message with detailed debugging info
-            const errorDiv = document.createElement('div');
-            errorDiv.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: rgba(220, 53, 69, 0.9);
-                color: white;
-                padding: 20px;
-                border-radius: 8px;
-                text-align: center;
-                z-index: 2000;
-                max-width: 500px;
-            `;
-            errorDiv.innerHTML = `
-                <h3>Unable to Load Data</h3>
-                <p>Failed to load data from Google Sheets.</p>
-                <div style="margin: 15px 0; font-size: 12px; text-align: left;">
-                    <p><strong>Debug Info:</strong></p>
-                    <p>URL: <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv" target="_blank" style="color: #fff;">Test Google Sheets URL</a></p>
-                    <p>Error: ${fallbackError.message}</p>
-                </div>
-                <div>
-                    <button onclick="location.reload()" style="margin: 5px; padding: 8px 16px; background: white; color: #dc3545; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-                    <button onclick="window.open('https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv', '_blank')" style="margin: 5px; padding: 8px 16px; background: #333; color: white; border: none; border-radius: 4px; cursor: pointer;">Test URL</button>
-                </div>
-            `;
-            document.body.appendChild(errorDiv);
-        }
+        errorDiv.innerHTML = `
+            <h3>Unable to Load Data</h3>
+            <p>Failed to load profiles from Google Sheets.</p>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <button onclick="location.reload()" style="margin: 10px; padding: 8px 16px; background: white; color: #dc3545; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
+        `;
+        document.body.appendChild(errorDiv);
     }
 }
 
 // Fetch profile data from Google Sheets
 async function fetchProfileData() {
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv';
+    
     try {
-        // Google Sheet CSV URL - Working URL with actual data
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv';
+        console.log('Fetching data from Google Sheets...');
         
-        try {
-            // Try to fetch from Google Sheets with multiple approaches
-            console.log('Fetching data from Google Sheets...');
-            console.log('CSV URL:', csvUrl);
-            
-            let response;
-            let csvText;
-            
-            // Method 1: Direct fetch with no-cors mode
-            try {
-                console.log('Trying direct fetch with no-cors...');
-                response = await fetch(csvUrl, {
-                    method: 'GET',
-                    mode: 'no-cors'
-                });
-                console.log('Direct fetch response:', response);
-                
-                // For no-cors, we can't read the response, so try cors mode
-                response = await fetch(csvUrl, {
-                    method: 'GET',
-                    mode: 'cors',
-                    headers: {
-                        'Accept': 'text/csv,text/plain,*/*'
-                    }
-                });
-                
-                if (response.ok) {
-                    csvText = await response.text();
-                    console.log('✅ Direct fetch successful, data length:', csvText.length);
-                } else {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-            } catch (corsError) {
-                console.log('Direct fetch failed:', corsError.message);
-                
-                // Method 2: CORS proxy
-                try {
-                    console.log('Trying CORS proxy...');
-                    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
-                    console.log('Proxy URL:', proxyUrl);
-                    
-                    response = await fetch(proxyUrl);
-                    
-                    if (response.ok) {
-                        csvText = await response.text();
-                        console.log('✅ CORS proxy fetch successful, data length:', csvText.length);
-                    } else {
-                        throw new Error(`Proxy HTTP ${response.status}: ${response.statusText}`);
-                    }
-                } catch (proxyError) {
-                    console.log('CORS proxy failed:', proxyError.message);
-                    
-                    // Method 3: Alternative proxy
-                    try {
-                        console.log('Trying alternative proxy...');
-                        const altProxyUrl = 'https://cors-anywhere.herokuapp.com/' + csvUrl;
-                        console.log('Alt proxy URL:', altProxyUrl);
-                        
-                        response = await fetch(altProxyUrl);
-                        
-                        if (response.ok) {
-                            csvText = await response.text();
-                            console.log('✅ Alternative proxy fetch successful, data length:', csvText.length);
-                        } else {
-                            throw new Error(`Alt proxy HTTP ${response.status}: ${response.statusText}`);
-                        }
-                    } catch (altError) {
-                        console.log('Alternative proxy failed:', altError.message);
-                        console.error('All fetch methods failed. Details:', {
-                            directError: corsError.message,
-                            proxyError: proxyError.message,
-                            altProxyError: altError.message
-                        });
-                        throw new Error('All fetch methods failed. CORS issue preventing data access.');
-                    }
-                }
+        // Try direct fetch first
+        let response = await fetch(csvUrl, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                'Accept': 'text/csv,text/plain,*/*'
             }
-            
-            if (csvText) {
-                console.log('Raw CSV data received:', csvText.length, 'characters');
-                console.log('First 200 characters:', csvText.substring(0, 200));
-                
-                profileData = parseCSV(csvText);
-                
-                if (profileData.length > 0) {
-                    console.log(`✅ Successfully loaded ${profileData.length} profiles from Google Sheets`);
-                    document.getElementById('dataSourceText').textContent = 'Data: Google Sheets';
-                    return;
-                } else {
-                    console.warn('No valid profiles found in CSV data');
-                    console.log('Full CSV text for debugging:', csvText);
-                    throw new Error('No valid profiles could be parsed from the CSV data');
-                }
-            } else {
-                throw new Error('No CSV data received');
-            }
-        } catch (error) {
-            console.error('Error fetching from Google Sheets:', error);
-            console.error('Error stack:', error.stack);
-            
-            // Show specific error message for publishing issues
-            if (error.message.includes('not properly published')) {
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = `
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: rgba(220, 53, 69, 0.95);
-                    color: white;
-                    padding: 25px;
-                    border-radius: 12px;
-                    text-align: center;
-                    z-index: 2000;
-                    max-width: 600px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                `;
-                errorDiv.innerHTML = `
-                    <h3 style="margin: 0 0 15px 0;">❌ Google Sheet Not Properly Published</h3>
-                    <p style="margin: 10px 0;">The Google Sheet is not published as CSV format.</p>
-                    <div style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: left; font-size: 14px;">
-                        <p><strong>To fix this:</strong></p>
-                        <ol style="margin: 10px 0; padding-left: 20px;">
-                            <li>Open your Google Sheet</li>
-                            <li>Go to <strong>File → Share → Publish to web</strong></li>
-                            <li>Select <strong>"Entire Document"</strong></li>
-                            <li>Choose <strong>"Comma-separated values (.csv)"</strong></li>
-                            <li>Click <strong>"Publish"</strong></li>
-                            <li>Copy the new URL and update your code</li>
-                        </ol>
-                    </div>
-                    <div style="margin: 15px 0;">
-                        <p style="font-size: 12px; opacity: 0.8;">Current URL returns: "kasari-software" instead of CSV data</p>
-                    </div>
-                    <div>
-                        <button onclick="location.reload()" style="margin: 5px; padding: 10px 20px; background: white; color: #dc3545; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Retry</button>
-                        <button onclick="window.open('https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv', '_blank')" style="margin: 5px; padding: 10px 20px; background: #333; color: white; border: none; border-radius: 6px; cursor: pointer;">Test Current URL</button>
-                    </div>
-                `;
-                document.body.appendChild(errorDiv);
-                return;
-            }
-            
-            throw error;
+        });
+        
+        if (!response.ok) {
+            // Try with CORS proxy
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
+            response = await fetch(proxyUrl);
         }
         
-        // If Google Sheets fails, show error - no sample data fallback
-        console.error('Failed to load data from Google Sheets');
-        throw new Error('Unable to load data from Google Sheets. Please check the sheet URL and ensure it is properly published as CSV.');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const csvText = await response.text();
+        console.log('CSV data received:', csvText.length, 'characters');
+        
+        profileData = parseCSV(csvText);
+        
+        if (profileData.length === 0) {
+            throw new Error('No valid profiles found in CSV data');
+        }
+        
+        console.log(`✅ Successfully loaded ${profileData.length} profiles from Google Sheets`);
+        console.log('First profile:', profileData[0]?.name);
+        console.log('Last profile:', profileData[profileData.length - 1]?.name);
         
     } catch (error) {
         console.error('Error fetching profile data:', error);
@@ -335,31 +157,16 @@ async function fetchProfileData() {
 function parseCSV(csvText) {
     // Check if we got HTML instead of CSV
     if (csvText.includes('<html>') || csvText.includes('<!DOCTYPE') || csvText.includes('kasari-software')) {
-        console.error('❌ Received HTML instead of CSV data. The Google Sheet is not properly published as CSV.');
-        console.error('Received content:', csvText);
-        throw new Error('Google Sheet is not properly published as CSV. Please ensure the sheet is published to web as CSV format.');
+        throw new Error('Google Sheet is not properly published as CSV format');
     }
     
     const lines = csvText.split('\n').filter(line => line.trim());
     if (lines.length < 2) {
-        console.error('❌ CSV has insufficient data - only', lines.length, 'lines');
-        console.error('CSV content:', csvText);
-        throw new Error(`CSV has insufficient data - only ${lines.length} lines found`);
+        throw new Error(`CSV has insufficient data - only ${lines.length} lines`);
     }
     
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    console.log('CSV Headers found:', headers);
-    
-    // More flexible header validation - just check if we have basic required fields
-    const hasName = headers.some(h => h.toLowerCase().includes('name'));
-    const hasAge = headers.some(h => h.toLowerCase().includes('age'));
-    const hasCountry = headers.some(h => h.toLowerCase().includes('country'));
-    
-    if (!hasName || !hasAge || !hasCountry) {
-        console.error('❌ CSV missing required headers. Found:', headers);
-        console.error('Need at least: Name, Age, Country');
-        throw new Error(`CSV missing required headers. Found: ${headers.join(', ')}. Need at least: Name, Age, Country`);
-    }
+    console.log('CSV Headers:', headers);
     
     // Find column indices
     const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name'));
@@ -369,7 +176,9 @@ function parseCSV(csvText) {
     const interestIndex = headers.findIndex(h => h.toLowerCase().includes('interest'));
     const netWorthIndex = headers.findIndex(h => h.toLowerCase().includes('worth') || h.toLowerCase().includes('net'));
     
-    console.log('Column indices:', { nameIndex, photoIndex, ageIndex, countryIndex, interestIndex, netWorthIndex });
+    if (nameIndex === -1 || ageIndex === -1 || countryIndex === -1) {
+        throw new Error('CSV missing required headers: Name, Age, Country');
+    }
     
     const profiles = [];
     
@@ -378,44 +187,37 @@ function parseCSV(csvText) {
         if (!line) continue;
         
         const values = parseCSVLine(line);
-        console.log(`Row ${i} values:`, values);
         
-        if (values.length >= 3) { // At least name, age, country
-            // Extract data using found indices
+        if (values.length >= 3) {
             const name = (values[nameIndex] || `Person ${i}`).replace(/"/g, '').trim();
             const photo = photoIndex >= 0 ? (values[photoIndex] || '').replace(/"/g, '').trim() : '';
-            const finalPhoto = photo || `https://via.placeholder.com/60x60/333/fff?text=${name.charAt(0)}`;
+            const finalPhoto = photo || `https://via.placeholder.com/60x60/0,127,127/fff?text=${name.charAt(0)}`;
             const age = parseInt(values[ageIndex]) || 25;
             const country = (values[countryIndex] || 'Unknown').replace(/"/g, '').trim();
             const interest = interestIndex >= 0 ? (values[interestIndex] || 'General').replace(/"/g, '').trim() : 'General';
             
-            // Parse net worth
-            let netWorth = 75000; // Default value
+            let netWorth = 75000;
             if (netWorthIndex >= 0 && values[netWorthIndex]) {
                 const netWorthStr = values[netWorthIndex].replace(/"/g, '').trim();
                 netWorth = parseFloat(netWorthStr.replace(/[$,]/g, '')) || 75000;
             }
             
-            const profile = {
+            profiles.push({
                 name,
                 photo: finalPhoto,
                 age,
                 country,
                 interest,
                 netWorth
-            };
-            
-            console.log(`Parsed profile ${i}:`, profile);
-            profiles.push(profile);
+            });
         }
     }
     
     console.log(`✅ Parsed ${profiles.length} valid profiles`);
-    
-    if (profiles.length === 0) {
-        throw new Error('No valid profiles could be parsed from the CSV data');
+    if (profiles.length > 0) {
+        console.log('First profile parsed:', profiles[0].name);
+        console.log('Last profile parsed:', profiles[profiles.length - 1].name);
     }
-    
     return profiles;
 }
 
@@ -446,72 +248,57 @@ function parseCSVLine(line) {
 function initThreeJS() {
     const container = document.getElementById('container');
     
-    // Create scene - simplified version
-    scene = new THREE.Scene();
-    
-    // Add children array if it doesn't exist
-    if (!scene.children) {
-        scene.children = [];
-    }
-    
-    // Override add method to work with our CSS3DObjects
-    const originalAdd = scene.add.bind(scene);
-    scene.add = function(object) {
-        if (object instanceof THREE.CSS3DObject) {
-            // Add to our children array for CSS3D objects
-            this.children.push(object);
-        } else {
-            // Use original add for regular Three.js objects
-            originalAdd(object);
-        }
-    };
-    
     // Create camera
     camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 3000;
     
-    // Create CSS3D renderer
+    // Create scene
+    scene = new THREE.Scene();
+    
+    // Create renderer
     renderer = new THREE.CSS3DRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.domElement.style.position = 'absolute';
-    renderer.domElement.style.top = '0';
     container.appendChild(renderer.domElement);
     
-    // Create controls with better range for compact design
+    // Create controls
     controls = new THREE.TrackballControls(camera, renderer.domElement);
-    controls.rotateSpeed = 0.8;
-    controls.minDistance = 100;   // Allow very close inspection
-    controls.maxDistance = 8000;  // Allow far overview
+    controls.rotateSpeed = 0.5;
+    controls.minDistance = 500;
+    controls.maxDistance = 6000;
     controls.addEventListener('change', render);
     
-    // Set initial camera position
-    camera.position.set(0, 0, 1500);
-    camera.lookAt(0, 0, 0);
-    
     // Handle window resize
-    window.addEventListener('resize', onWindowResize, false);
+    window.addEventListener('resize', onWindowResize);
 }
 
-// Create profile cards as 3D objects
-function createProfileCards() {
-    objects = [];
+// Create profile elements
+function createElements() {
+    console.log(`Creating ${profileData.length} profile elements...`);
     
-    profileData.forEach((profile, index) => {
-        // Create DOM element for the card
-        const element = document.createElement('div');
-        element.className = 'profile-card';
+    for (let i = 0; i < profileData.length; i++) {
+        const profile = profileData[i];
         
-        // Determine net worth color class - exactly as specified
-        let networthClass = 'networth-low';  // Red for < $100K
-        if (profile.netWorth > 200000) {
-            networthClass = 'networth-high';  // Green for > $200K
-        } else if (profile.netWorth > 100000) {
-            networthClass = 'networth-medium'; // Orange for > $100K
+        // Log first and last few profiles for verification
+        if (i < 3 || i >= profileData.length - 3) {
+            console.log(`Profile ${i + 1}: ${profile.name}`);
         }
         
+        // Create element div
+        const element = document.createElement('div');
+        element.className = 'element';
+        element.setAttribute('data-index', i);
+        element.setAttribute('data-name', profile.name);
+        
+        // Determine net worth color class
+        let networthClass = 'networth-low';
+        if (profile.netWorth > 200000) {
+            networthClass = 'networth-high';
+        } else if (profile.netWorth > 100000) {
+            networthClass = 'networth-medium';
+        }
         element.classList.add(networthClass);
         
-        // Format net worth for display
+        // Format net worth
         const formattedNetWorth = new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
@@ -519,298 +306,173 @@ function createProfileCards() {
             maximumFractionDigits: 0
         }).format(profile.netWorth);
         
+        // Create element content
         element.innerHTML = `
-            <div class="profile-index" style="position: absolute; top: 2px; left: 2px; background: rgba(0,0,0,0.7); color: white; font-size: 10px; padding: 2px 4px; border-radius: 3px;">#${index + 1}</div>
-            <img src="${profile.photo}" alt="${profile.name}" class="profile-photo" onerror="this.src='https://via.placeholder.com/60x60/333/fff?text=${profile.name.charAt(0)}'">
-            <div class="profile-name">${profile.name}</div>
-            <div class="profile-age">Age: ${profile.age}</div>
-            <div class="profile-country">${profile.country}</div>
-            <div class="profile-interest">${profile.interest}</div>
-            <div class="profile-networth">${formattedNetWorth}</div>
+            <div class="number">${i + 1}</div>
+            <img src="${profile.photo}" alt="${profile.name}" class="photo" onerror="this.src='https://via.placeholder.com/60x60/0,127,127/fff?text=${profile.name.charAt(0)}'">
+            <div class="name">${profile.name}</div>
+            <div class="age">Age: ${profile.age}</div>
+            <div class="country">${profile.country}</div>
+            <div class="interest">${profile.interest}</div>
+            <div class="networth">${formattedNetWorth}</div>
         `;
         
         // Create CSS3D object
-        const object = new THREE.CSS3DObject(element);
+        const objectCSS = new THREE.CSS3DObject(element);
+        objectCSS.position.x = Math.random() * 4000 - 2000;
+        objectCSS.position.y = Math.random() * 4000 - 2000;
+        objectCSS.position.z = Math.random() * 4000 - 2000;
         
-        // Store the original index for proper ordering
-        object.userData = { originalIndex: index, profile: profile };
-        
-        // Set initial position (will be overridden by layout)
-        object.position.x = 0;
-        object.position.y = 0;
-        object.position.z = 0;
-        
-        scene.add(object);
-        objects.push(object);
-    });
-    
-    console.log(`Created ${objects.length} profile cards in correct order`);
-    console.log(`First card: ${objects[0].userData.profile.name}`);
-    console.log(`Last card: ${objects[objects.length-1].userData.profile.name}`);
-}
-
-// Layout functions
-function setLayout(layoutType) {
-    currentLayout = layoutType;
-    
-    // Update active button
-    document.querySelectorAll('.layout-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(layoutType + 'Btn').classList.add('active');
-    
-    console.log(`Switching to ${layoutType} layout with ${objects.length} profiles`);
-    
-    switch (layoutType) {
-        case 'table':
-            setTableLayout();
-            break;
-        case 'sphere':
-            setSphereLayout();
-            break;
-        case 'helix':
-            setHelixLayout();
-            break;
-        case 'grid':
-            setGridLayout();
-            break;
+        scene.add(objectCSS);
+        objects.push(objectCSS);
     }
     
-    // Animate to new positions
-    animateToLayout();
-    
-    // Update controls target after layout change
-    setTimeout(() => {
-        controls.target.set(0, 0, 0);
-        controls.update();
-        render();
-    }, 100);
+    console.log(`✅ Created ${objects.length} profile elements`);
 }
 
-// Table layout (20 columns × 10 rows) - EXACT PERIODIC TABLE STYLE
-function setTableLayout() {
-    const cols = 20;
-    const rows = Math.ceil(objects.length / cols);
-    
-    console.log(`Table layout: ${objects.length} profiles in ${cols} cols × ${rows} rows`);
-    
-    objects.forEach((object, index) => {
-        const col = index % cols;
-        const row = Math.floor(index / cols);
+// Setup layout targets
+function setupLayouts() {
+    // TABLE LAYOUT (20x10) - Sequential ordering: left to right, top to bottom
+    for (let i = 0; i < objects.length; i++) {
+        const object = new THREE.Object3D();
         
-        // Exact spacing like periodic table - tight grid
-        object.position.x = col * 85 - (cols * 85) / 2;
-        object.position.y = -(row * 85) + (rows * 85) / 2;
+        // Calculate position: 20 columns, sequential row-by-row
+        const col = i % 20;  // 0-19 columns
+        const row = Math.floor(i / 20);  // Row number
+        
+        // Position calculation for proper spacing
+        object.position.x = col * 140 - 1330;  // Center the grid
+        object.position.y = -(row * 180) + 990;  // Top to bottom
         object.position.z = 0;
         
-        object.rotation.x = 0;
-        object.rotation.y = 0;
-        object.rotation.z = 0;
-    });
-    
-    // Camera positioning for full table view
-    const tableWidth = cols * 85;
-    const tableHeight = rows * 85;
-    const maxDimension = Math.max(tableWidth, tableHeight);
-    const optimalDistance = maxDimension * 0.7;
-    
-    camera.position.set(0, 0, Math.max(optimalDistance, 1200));
-    camera.lookAt(0, 0, 0);
-    controls.target.set(0, 0, 0);
-    
-    // Update layout info
-    updateLayoutInfo(`Table: ${cols}×${rows} (${objects.length} profiles)`);
-    
-    // Update debug info to show visual order
-    const debugInfo = document.getElementById('debugInfo');
-    if (debugInfo && objects.length > 0) {
-        debugInfo.textContent = `Visual: ${objects[0].userData.profile.name} → ${objects[objects.length-1].userData.profile.name}`;
+        targets.table.push(object);
     }
     
-    // Verify order
-    console.log(`Table layout - First visible: ${objects[0].userData.profile.name}, Last visible: ${objects[objects.length-1].userData.profile.name}`);
-    console.log(`Position 0 (top-left): ${objects[0].userData.profile.name} at (${objects[0].position.x}, ${objects[0].position.y})`);
-    console.log(`Position ${objects.length-1} (bottom-right): ${objects[objects.length-1].userData.profile.name} at (${objects[objects.length-1].position.x}, ${objects[objects.length-1].position.y})`);
-}
-
-// Sphere layout - properly distribute all profiles
-function setSphereLayout() {
-    const radius = 600; // Smaller radius for better view
-    const totalProfiles = objects.length;
+    console.log(`✅ Table layout created for ${objects.length} profiles`);
+    console.log('First profile position:', targets.table[0]?.position);
+    console.log('Last profile position:', targets.table[objects.length - 1]?.position);
     
-    console.log(`Sphere layout: ${totalProfiles} profiles on sphere with radius ${radius}`);
-    
-    objects.forEach((object, index) => {
-        const phi = Math.acos(-1 + (2 * index) / totalProfiles);
-        const theta = Math.sqrt(totalProfiles * Math.PI) * phi;
+    // SPHERE LAYOUT
+    const radius = 800;
+    for (let i = 0; i < objects.length; i++) {
+        const object = new THREE.Object3D();
+        
+        const phi = Math.acos(-1 + (2 * i) / objects.length);
+        const theta = Math.sqrt(objects.length * Math.PI) * phi;
         
         object.position.x = radius * Math.cos(theta) * Math.sin(phi);
         object.position.y = radius * Math.sin(theta) * Math.sin(phi);
         object.position.z = radius * Math.cos(phi);
         
-        // Simple lookAt implementation for our CSS3DObject
-        const distance = Math.sqrt(
-            object.position.x * object.position.x + 
-            object.position.y * object.position.y + 
-            object.position.z * object.position.z
-        );
+        const vector = new THREE.Vector3();
+        vector.copy(object.position).multiplyScalar(2);
+        object.lookAt(vector);
         
-        // Rotate to face outward from center
-        object.rotation.y = Math.atan2(object.position.x, object.position.z);
-        object.rotation.x = Math.asin(object.position.y / distance);
-    });
-    
-    // Position camera to see the full sphere
-    camera.position.set(0, 0, radius * 2.2);
-    camera.lookAt(0, 0, 0);
-    controls.target.set(0, 0, 0);
-    
-    // Update layout info
-    updateLayoutInfo(`Sphere: ${totalProfiles} profiles on radius ${radius}`);
-}
-
-// Double Helix layout - properly distribute all profiles
-function setHelixLayout() {
-    const radius = 400; // Smaller radius
-    const totalProfiles = objects.length;
-    const height = Math.max(1500, totalProfiles * 8); // Dynamic height
-    
-    console.log(`Double Helix layout: ${totalProfiles} profiles in double helix, height: ${height}`);
-    
-    objects.forEach((object, index) => {
-        const isFirstHelix = index % 2 === 0;
-        const helixIndex = Math.floor(index / 2);
-        const y = (helixIndex / (totalProfiles / 2)) * height - height / 2;
-        const angle = helixIndex * 0.2 + (isFirstHelix ? 0 : Math.PI);
-        
-        object.position.x = Math.cos(angle) * radius;
-        object.position.y = y;
-        object.position.z = Math.sin(angle) * radius;
-        
-        object.rotation.x = 0;
-        object.rotation.y = -angle;
-        object.rotation.z = 0;
-    });
-    
-    // Position camera to see the full helix
-    camera.position.set(radius * 2.5, 0, radius * 2.5);
-    camera.lookAt(0, 0, 0);
-    controls.target.set(0, 0, 0);
-    
-    // Update layout info
-    updateLayoutInfo(`Double Helix: ${totalProfiles} profiles, height ${height}`);
-}
-
-// Grid layout (5 × 4 × 10) - EXACT IMAGE C SPECIFICATION
-function setGridLayout() {
-    const cols = 5;
-    const rows = 4;
-    const totalProfiles = objects.length;
-    const layers = Math.ceil(totalProfiles / (cols * rows));
-    
-    console.log(`Grid layout: ${totalProfiles} profiles in ${cols}×${rows}×${layers} grid`);
-    
-    objects.forEach((object, index) => {
-        const col = index % cols;
-        const row = Math.floor(index / cols) % rows;
-        const layer = Math.floor(index / (cols * rows));
-        
-        // Spacing to match Image C - 5×4×10 structure
-        object.position.x = col * 120 - (cols * 120) / 2;
-        object.position.y = row * 120 - (rows * 120) / 2;
-        object.position.z = layer * 120 - (layers * 120) / 2;
-        
-        object.rotation.x = 0;
-        object.rotation.y = 0;
-        object.rotation.z = 0;
-    });
-    
-    // Camera positioning for 3D grid view like Image C
-    const gridWidth = cols * 120;
-    const gridHeight = rows * 120;
-    const gridDepth = layers * 120;
-    const maxDimension = Math.max(gridWidth, gridHeight, gridDepth);
-    const optimalDistance = maxDimension * 1.0;
-    
-    camera.position.set(optimalDistance * 0.8, optimalDistance * 0.6, optimalDistance * 0.8);
-    camera.lookAt(0, 0, 0);
-    controls.target.set(0, 0, 0);
-    
-    // Update layout info
-    updateLayoutInfo(`Grid: ${cols}×${rows}×${layers} (${totalProfiles} profiles)`);
-}
-
-
-// Animate objects to their new positions
-function animateToLayout() {
-    const duration = 2000; // 2 seconds
-    const startTime = Date.now();
-    
-    // Store initial positions
-    const initialPositions = objects.map(obj => ({
-        x: obj.position.x,
-        y: obj.position.y,
-        z: obj.position.z,
-        rx: obj.rotation.x,
-        ry: obj.rotation.y,
-        rz: obj.rotation.z
-    }));
-    
-    // Store target positions
-    const targetPositions = objects.map(obj => ({
-        x: obj.position.x,
-        y: obj.position.y,
-        z: obj.position.z,
-        rx: obj.rotation.x,
-        ry: obj.rotation.y,
-        rz: obj.rotation.z
-    }));
-    
-    function animate() {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Easing function (ease-in-out)
-        const easeProgress = progress < 0.5 
-            ? 2 * progress * progress 
-            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        
-        objects.forEach((obj, index) => {
-            const initial = initialPositions[index];
-            const target = targetPositions[index];
-            
-            obj.position.x = initial.x + (target.x - initial.x) * easeProgress;
-            obj.position.y = initial.y + (target.y - initial.y) * easeProgress;
-            obj.position.z = initial.z + (target.z - initial.z) * easeProgress;
-            
-            obj.rotation.x = initial.rx + (target.rx - initial.rx) * easeProgress;
-            obj.rotation.y = initial.ry + (target.ry - initial.ry) * easeProgress;
-            obj.rotation.z = initial.rz + (target.rz - initial.rz) * easeProgress;
-        });
-        
-        render();
-        
-        if (progress < 1) {
-            requestAnimationFrame(animate);
-        }
+        targets.sphere.push(object);
     }
     
-    animate();
+    // HELIX LAYOUT (Double Helix)
+    for (let i = 0; i < objects.length; i++) {
+        const object = new THREE.Object3D();
+        
+        const isFirstHelix = i % 2 === 0;
+        const helixIndex = Math.floor(i / 2);
+        const y = (helixIndex / (objects.length / 2)) * 1000 - 500;
+        const angle = helixIndex * 0.175 + (isFirstHelix ? 0 : Math.PI);
+        
+        object.position.x = Math.cos(angle) * 400;
+        object.position.y = y;
+        object.position.z = Math.sin(angle) * 400;
+        
+        const vector = new THREE.Vector3();
+        vector.x = object.position.x * 2;
+        vector.y = object.position.y;
+        vector.z = object.position.z * 2;
+        object.lookAt(vector);
+        
+        targets.helix.push(object);
+    }
+    
+    // GRID LAYOUT (5x4x10)
+    for (let i = 0; i < objects.length; i++) {
+        const object = new THREE.Object3D();
+        
+        const col = i % 5;
+        const row = Math.floor(i / 5) % 4;
+        const layer = Math.floor(i / 20);
+        
+        object.position.x = col * 200 - 400;
+        object.position.y = row * 200 - 300;
+        object.position.z = layer * 200 - 1000;
+        
+        targets.grid.push(object);
+    }
+}
+
+// Transform to target layout
+function transform(targets, duration) {
+    TWEEN.removeAll();
+    
+    for (let i = 0; i < objects.length; i++) {
+        const object = objects[i];
+        const target = targets[i];
+        
+        new TWEEN.Tween(object.position)
+            .to({
+                x: target.position.x,
+                y: target.position.y,
+                z: target.position.z
+            }, Math.random() * duration + duration)
+            .easing(TWEEN.Easing.Exponential.InOut)
+            .start();
+        
+        new TWEEN.Tween(object.rotation)
+            .to({
+                x: target.rotation.x,
+                y: target.rotation.y,
+                z: target.rotation.z
+            }, Math.random() * duration + duration)
+            .easing(TWEEN.Easing.Exponential.InOut)
+            .start();
+    }
+    
+    new TWEEN.Tween(this)
+        .to({}, duration * 2)
+        .onUpdate(render)
+        .start();
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    document.getElementById('tableBtn').addEventListener('click', () => setLayout('table'));
-    document.getElementById('sphereBtn').addEventListener('click', () => setLayout('sphere'));
-    document.getElementById('helixBtn').addEventListener('click', () => setLayout('helix'));
-    document.getElementById('gridBtn').addEventListener('click', () => setLayout('grid'));
-    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('table').addEventListener('click', () => {
+        transform(targets.table, 2000);
+        setActiveButton('table');
+    });
+    
+    document.getElementById('sphere').addEventListener('click', () => {
+        transform(targets.sphere, 2000);
+        setActiveButton('sphere');
+    });
+    
+    document.getElementById('helix').addEventListener('click', () => {
+        transform(targets.helix, 2000);
+        setActiveButton('helix');
+    });
+    
+    document.getElementById('grid').addEventListener('click', () => {
+        transform(targets.grid, 2000);
+        setActiveButton('grid');
+    });
+    
+    // Set initial active button
+    setActiveButton('table');
 }
 
-// Update layout information display
-function updateLayoutInfo(info) {
-    const layoutInfo = document.getElementById('layoutInfo');
-    if (layoutInfo) {
-        layoutInfo.textContent = info;
-    }
+// Set active button
+function setActiveButton(activeId) {
+    const buttons = document.querySelectorAll('#menu button');
+    buttons.forEach(button => button.classList.remove('active'));
+    document.getElementById(activeId).classList.add('active');
 }
 
 // Render function
@@ -821,6 +483,7 @@ function render() {
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
+    TWEEN.update();
     controls.update();
 }
 
@@ -832,63 +495,10 @@ function onWindowResize() {
     render();
 }
 
-// Start animation loop when page loads
-window.addEventListener('load', () => {
-    console.log('Page loaded, checking Three.js...');
-    
-    // Wait for all Three.js components to load
-    function checkThreeJS() {
-        // Check if Three.js loaded properly
-        if (typeof THREE === 'undefined') {
-            console.error('THREE.js not loaded!');
-            setTimeout(checkThreeJS, 500);
-            return;
-        }
-        
-        // Check if CSS3DRenderer is available and is a constructor
-        if (typeof THREE.CSS3DRenderer === 'undefined') {
-            console.log('Waiting for CSS3DRenderer...');
-            setTimeout(checkThreeJS, 500);
-            return;
-        }
-        
-        // Test if CSS3DRenderer is actually a constructor
-        try {
-            const testRenderer = new THREE.CSS3DRenderer();
-            console.log('✅ CSS3DRenderer constructor test passed');
-        } catch (error) {
-            console.error('❌ CSS3DRenderer constructor test failed:', error);
-            setTimeout(checkThreeJS, 500);
-            return;
-        }
-        
-        // Check if TrackballControls is available and is a constructor
-        if (typeof THREE.TrackballControls === 'undefined') {
-            console.log('Waiting for TrackballControls...');
-            setTimeout(checkThreeJS, 500);
-            return;
-        }
-        
-        // Test if TrackballControls is actually a constructor
-        try {
-            const testCamera = new THREE.PerspectiveCamera();
-            const testControls = new THREE.TrackballControls(testCamera);
-            console.log('✅ TrackballControls constructor test passed');
-        } catch (error) {
-            console.error('❌ TrackballControls constructor test failed:', error);
-            setTimeout(checkThreeJS, 500);
-            return;
-        }
-        
-        console.log('✅ All Three.js components loaded successfully');
-        console.log('THREE.CSS3DRenderer:', typeof THREE.CSS3DRenderer);
-        console.log('THREE.TrackballControls:', typeof THREE.TrackballControls);
-        animate();
-    }
-    
-    // Start checking immediately
-    checkThreeJS();
-});
-
-// Make handleCredentialResponse globally available for Google Sign-In
-window.handleCredentialResponse = handleCredentialResponse;
+// Include TWEEN.js for smooth animations
+const script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js';
+script.onload = () => {
+    console.log('✅ TWEEN.js loaded');
+};
+document.head.appendChild(script);

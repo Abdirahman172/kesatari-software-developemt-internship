@@ -3,62 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Profile Visualization</title>
+    <title>3D Profile Visualization - Periodic Table Style</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Three.js core -->
     <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
     
-    <!-- Define callback function before Google Sign-In loads -->
+    <!-- Pre-define callback function -->
     <script>
-        // Pre-define the callback function to avoid timing issues
+        // Global callback function for Google Sign-In
         function handleCredentialResponse(response) {
             console.log('Google Sign-In callback triggered');
-            // The actual implementation will be loaded from app.js
-            if (window.handleCredentialResponse && window.handleCredentialResponse !== handleCredentialResponse) {
-                window.handleCredentialResponse(response);
+            // Call the app's handler when it's loaded
+            if (window.appHandleCredentialResponse) {
+                window.appHandleCredentialResponse(response);
+            } else {
+                // Store response for later if app not loaded yet
+                window.pendingCredentialResponse = response;
             }
         }
-        window.handleCredentialResponse = handleCredentialResponse;
     </script>
     
-    <!-- Wait for THREE to load, then add components -->
+    <!-- Three.js CSS3D Components -->
     <script>
         window.addEventListener('load', function() {
             if (typeof THREE !== 'undefined') {
                 console.log('✅ THREE.js core loaded');
                 
-                // Add CSS3DObject - simplified version that doesn't inherit from Object3D
+                // CSS3DObject - Exact Three.js implementation
                 THREE.CSS3DObject = function ( element ) {
-                    // Create a simple object with the properties we need
+                    THREE.Object3D.call( this );
                     this.element = element;
                     this.element.style.position = 'absolute';
-                    
-                    // Add basic 3D object properties
-                    this.position = { x: 0, y: 0, z: 0 };
-                    this.rotation = { x: 0, y: 0, z: 0 };
-                    this.scale = { x: 1, y: 1, z: 1 };
-                    this.visible = true;
-                    
-                    // Add to scene method
-                    this.add = function(child) {
-                        // Simple add functionality
-                    };
-                    
-                    // Traverse method for compatibility
-                    this.traverse = function(callback) {
-                        callback(this);
-                    };
+                    this.addEventListener( 'removed', function () {
+                        this.traverse( function ( child ) {
+                            if ( child.element instanceof Element && child.element.parentNode ) {
+                                child.element.parentNode.removeChild( child.element );
+                            }
+                        } );
+                    } );
                 };
-                
-                // Don't inherit from Object3D to avoid constructor issues
+                THREE.CSS3DObject.prototype = Object.create( THREE.Object3D.prototype );
                 THREE.CSS3DObject.prototype.constructor = THREE.CSS3DObject;
 
-                // Add CSS3DRenderer
-                THREE.CSS3DRenderer = function () {
+                // CSS3DRenderer - Exact Three.js implementation
+                THREE.CSS3DRenderer = function ( parameters ) {
                     var _this = this;
                     var _width, _height;
                     var _widthHalf, _heightHalf;
+                    var matrix = new THREE.Matrix4();
+                    var cache = {
+                        camera: { fov: 0, style: '' },
+                        objects: new WeakMap()
+                    };
                     var domElement = document.createElement( 'div' );
                     domElement.style.overflow = 'hidden';
                     this.domElement = domElement;
@@ -78,35 +75,108 @@
                         cameraElement.style.height = height + 'px';
                     };
 
+                    var getCameraCSSMatrix = function ( matrix ) {
+                        var elements = matrix.elements;
+                        return 'matrix3d(' +
+                            epsilon( elements[ 0 ] ) + ',' +
+                            epsilon( - elements[ 1 ] ) + ',' +
+                            epsilon( elements[ 2 ] ) + ',' +
+                            epsilon( elements[ 3 ] ) + ',' +
+                            epsilon( elements[ 4 ] ) + ',' +
+                            epsilon( - elements[ 5 ] ) + ',' +
+                            epsilon( elements[ 6 ] ) + ',' +
+                            epsilon( elements[ 7 ] ) + ',' +
+                            epsilon( elements[ 8 ] ) + ',' +
+                            epsilon( - elements[ 9 ] ) + ',' +
+                            epsilon( elements[ 10 ] ) + ',' +
+                            epsilon( elements[ 11 ] ) + ',' +
+                            epsilon( elements[ 12 ] ) + ',' +
+                            epsilon( - elements[ 13 ] ) + ',' +
+                            epsilon( elements[ 14 ] ) + ',' +
+                            epsilon( elements[ 15 ] ) +
+                        ')';
+                    };
+
+                    var getObjectCSSMatrix = function ( matrix, cameraCSSMatrix ) {
+                        var elements = matrix.elements;
+                        var matrix3d = 'matrix3d(' +
+                            epsilon( elements[ 0 ] ) + ',' +
+                            epsilon( elements[ 1 ] ) + ',' +
+                            epsilon( elements[ 2 ] ) + ',' +
+                            epsilon( elements[ 3 ] ) + ',' +
+                            epsilon( - elements[ 4 ] ) + ',' +
+                            epsilon( - elements[ 5 ] ) + ',' +
+                            epsilon( - elements[ 6 ] ) + ',' +
+                            epsilon( - elements[ 7 ] ) + ',' +
+                            epsilon( elements[ 8 ] ) + ',' +
+                            epsilon( elements[ 9 ] ) + ',' +
+                            epsilon( elements[ 10 ] ) + ',' +
+                            epsilon( elements[ 11 ] ) + ',' +
+                            epsilon( elements[ 12 ] ) + ',' +
+                            epsilon( elements[ 13 ] ) + ',' +
+                            epsilon( elements[ 14 ] ) + ',' +
+                            epsilon( elements[ 15 ] ) +
+                        ')';
+                        if ( cameraCSSMatrix === 'none' ) {
+                            return 'translate3d(-50%,-50%,0) ' + matrix3d;
+                        } else {
+                            return 'translate3d(-50%,-50%,0) ' + matrix3d + ' ' + cameraCSSMatrix;
+                        }
+                    };
+
+                    var renderObject = function ( object, scene, camera, cameraCSSMatrix ) {
+                        if ( object instanceof THREE.CSS3DObject ) {
+                            object.onBeforeRender( _this, scene, camera );
+                            var style;
+                            if ( object instanceof THREE.CSS3DSprite ) {
+                                matrix.copy( camera.matrixWorldInverse );
+                                matrix.transpose();
+                                if ( object.rotation2D !== 0 ) matrix.multiply( object.rotationMatrix );
+                                matrix.copyPosition( object.matrixWorld );
+                                matrix.scale( object.scale );
+                                matrix.elements[ 3 ] = 0;
+                                matrix.elements[ 7 ] = 0;
+                                matrix.elements[ 11 ] = 0;
+                                matrix.elements[ 15 ] = 1;
+                                style = getObjectCSSMatrix( matrix, cameraCSSMatrix );
+                            } else {
+                                style = getObjectCSSMatrix( object.matrixWorld, cameraCSSMatrix );
+                            }
+                            var element = object.element;
+                            var cachedObject = cache.objects.get( object );
+                            if ( cachedObject === undefined || cachedObject.style !== style ) {
+                                element.style.WebkitTransform = style;
+                                element.style.transform = style;
+                                var objectData = { style: style };
+                                cache.objects.set( object, objectData );
+                            }
+                            if ( element.parentNode !== cameraElement ) {
+                                cameraElement.appendChild( element );
+                            }
+                            object.onAfterRender( _this, scene, camera );
+                        }
+                        for ( var i = 0, l = object.children.length; i < l; i ++ ) {
+                            renderObject( object.children[ i ], scene, camera, cameraCSSMatrix );
+                        }
+                    };
+
+                    var epsilon = function ( value ) {
+                        return Math.abs( value ) < 1e-10 ? 0 : value;
+                    };
+
                     this.render = function ( scene, camera ) {
                         var fov = camera.projectionMatrix.elements[ 5 ] * _heightHalf;
-                        if ( camera.isPerspectiveCamera ) {
-                            domElement.style.WebkitPerspective = fov + 'px';
-                            domElement.style.perspective = fov + 'px';
+                        var style = "translate3d(0,0," + fov + "px)" + getCameraCSSMatrix( camera.matrixWorldInverse ) + " translate3d(" + _widthHalf + "px," + _heightHalf + "px, 0)";
+                        if ( cache.camera.style !== style ) {
+                            cameraElement.style.WebkitTransform = style;
+                            cameraElement.style.transform = style;
+                            cache.camera.style = style;
                         }
-                        if ( scene.autoUpdate === true ) scene.updateMatrixWorld();
-                        if ( camera.parent === null ) camera.updateMatrixWorld();
-                        
-                        // Render all CSS3DObjects in the scene
-                        if (scene.children) {
-                            scene.children.forEach(function(object) {
-                                if (object instanceof THREE.CSS3DObject && object.visible) {
-                                    if (object.element.parentNode !== cameraElement) {
-                                        cameraElement.appendChild(object.element);
-                                    }
-                                    // Apply transform based on position
-                                    var style = 'translate3d(' + object.position.x + 'px,' + object.position.y + 'px,' + object.position.z + 'px)';
-                                    if (object.rotation.x !== 0 || object.rotation.y !== 0 || object.rotation.z !== 0) {
-                                        style += ' rotateX(' + object.rotation.x + 'rad) rotateY(' + object.rotation.y + 'rad) rotateZ(' + object.rotation.z + 'rad)';
-                                    }
-                                    object.element.style.transform = style;
-                                }
-                            });
-                        }
+                        renderObject( scene, scene, camera, style );
                     };
                 };
 
-                // Add TrackballControls - working version
+                // TrackballControls - Simplified version
                 THREE.TrackballControls = function ( object, domElement ) {
                     var _this = this;
                     this.object = object;
@@ -117,7 +187,6 @@
                     this.panSpeed = 0.3;
                     this.target = new THREE.Vector3();
                     
-                    // Internal state
                     var _state = 'NONE';
                     var _eye = new THREE.Vector3();
                     var _rotateStart = new THREE.Vector2();
@@ -125,56 +194,38 @@
                     var _zoomStart = new THREE.Vector2();
                     var _zoomEnd = new THREE.Vector2();
                     
-                    // Store initial camera position
                     this.target0 = this.target.clone();
                     this.position0 = this.object.position.clone();
                     this.up0 = this.object.up.clone();
                     
                     this.update = function () {
                         _eye.subVectors( _this.object.position, _this.target );
-                        
-                        // Rotate camera
-                        if (_state === 'ROTATE') {
-                            var angle = Math.sqrt(
-                                Math.pow(_rotateEnd.x - _rotateStart.x, 2) +
-                                Math.pow(_rotateEnd.y - _rotateStart.y, 2)
-                            );
-                            
-                            if (angle) {
+                        if ( _state === 'ROTATE' ) {
+                            var angle = Math.sqrt( Math.pow( _rotateEnd.x - _rotateStart.x, 2 ) + Math.pow( _rotateEnd.y - _rotateStart.y, 2 ) );
+                            if ( angle ) {
                                 var axis = new THREE.Vector3();
-                                axis.set(
-                                    _rotateEnd.y - _rotateStart.y,
-                                    _rotateEnd.x - _rotateStart.x,
-                                    0
-                                ).normalize();
-                                
+                                axis.set( _rotateEnd.y - _rotateStart.y, _rotateEnd.x - _rotateStart.x, 0 ).normalize();
                                 var quaternion = new THREE.Quaternion();
-                                quaternion.setFromAxisAngle(axis, angle * _this.rotateSpeed);
-                                _eye.applyQuaternion(quaternion);
-                                _this.object.up.applyQuaternion(quaternion);
+                                quaternion.setFromAxisAngle( axis, angle * _this.rotateSpeed );
+                                _eye.applyQuaternion( quaternion );
+                                _this.object.up.applyQuaternion( quaternion );
                             }
-                            
-                            _rotateStart.copy(_rotateEnd);
+                            _rotateStart.copy( _rotateEnd );
                         }
-                        
-                        // Zoom camera
-                        if (_state === 'ZOOM') {
-                            var factor = 1.0 + (_zoomEnd.y - _zoomStart.y) * _this.zoomSpeed;
-                            if (factor !== 1.0 && factor > 0.0) {
-                                _eye.multiplyScalar(factor);
+                        if ( _state === 'ZOOM' ) {
+                            var factor = 1.0 + ( _zoomEnd.y - _zoomStart.y ) * _this.zoomSpeed;
+                            if ( factor !== 1.0 && factor > 0.0 ) {
+                                _eye.multiplyScalar( factor );
                             }
-                            _zoomStart.copy(_zoomEnd);
+                            _zoomStart.copy( _zoomEnd );
                         }
-                        
                         _this.object.position.addVectors( _this.target, _eye );
                         _this.object.lookAt( _this.target );
                     };
                     
-                    // Mouse event handlers
                     function onMouseDown( event ) {
                         if ( _this.enabled === false ) return;
                         event.preventDefault();
-                        
                         if ( event.button === 0 ) {
                             _state = 'ROTATE';
                             _rotateStart.set( event.clientX, event.clientY );
@@ -182,7 +233,6 @@
                             _state = 'ZOOM';
                             _zoomStart.set( event.clientX, event.clientY );
                         }
-                        
                         document.addEventListener( 'mousemove', onMouseMove, false );
                         document.addEventListener( 'mouseup', onMouseUp, false );
                     }
@@ -190,7 +240,6 @@
                     function onMouseMove( event ) {
                         if ( _this.enabled === false ) return;
                         event.preventDefault();
-                        
                         if ( _state === 'ROTATE' ) {
                             _rotateEnd.set( event.clientX, event.clientY );
                             _this.update();
@@ -203,9 +252,7 @@
                     function onMouseUp( event ) {
                         if ( _this.enabled === false ) return;
                         event.preventDefault();
-                        
                         _state = 'NONE';
-                        
                         document.removeEventListener( 'mousemove', onMouseMove );
                         document.removeEventListener( 'mouseup', onMouseUp );
                     }
@@ -213,7 +260,6 @@
                     function onMouseWheel( event ) {
                         if ( _this.enabled === false ) return;
                         event.preventDefault();
-                        
                         var delta = 0;
                         if ( event.wheelDelta ) {
                             delta = event.wheelDelta / 40;
@@ -222,29 +268,23 @@
                         } else if ( event.deltaY ) {
                             delta = - event.deltaY / 3;
                         }
-                        
                         _eye.subVectors( _this.object.position, _this.target );
                         _eye.multiplyScalar( 1 - delta * 0.01 );
                         _this.object.position.addVectors( _this.target, _eye );
                         _this.object.lookAt( _this.target );
                     }
                     
-                    // Add event listeners
                     this.domElement.addEventListener( 'mousedown', onMouseDown, false );
                     this.domElement.addEventListener( 'wheel', onMouseWheel, false );
-                    this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // Firefox
+                    this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false );
                     
-                    // Stub methods for compatibility
                     this.addEventListener = function() {};
                     this.dispatchEvent = function() {};
-                    this.handleResize = function() {};
                 };
                 THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
                 THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
                 
-                console.log('✅ All Three.js components loaded inline');
-            } else {
-                console.error('❌ THREE.js not loaded');
+                console.log('✅ All Three.js components loaded');
             }
         });
     </script>
@@ -254,7 +294,7 @@
     <div id="loginContainer" class="login-container">
         <div class="login-card">
             <h1>3D Profile Visualization</h1>
-            <p>Sign in with Google to access the visualization</p>
+            <p>Sign in with Google to access the periodic table visualization</p>
             <div id="g_id_onload"
                  data-client_id="953717110168-ld8sea9hpv1q67levd6n5bqo25asfvv1.apps.googleusercontent.com"
                  data-callback="handleCredentialResponse"
@@ -274,31 +314,23 @@
 
     <!-- Main Application -->
     <div id="appContainer" class="app-container" style="display: none;">
-        <!-- Controls -->
-        <div class="controls">
-            <button id="tableBtn" class="layout-btn active">Table</button>
-            <button id="sphereBtn" class="layout-btn">Sphere</button>
-            <button id="helixBtn" class="layout-btn">Double Helix</button>
-            <button id="gridBtn" class="layout-btn">Grid</button>
-            <button id="logoutBtn" class="logout-btn">Logout</button>
-        </div>
-
-        <!-- Data source indicator -->
-        <div id="dataSource" class="data-source">
-            <span id="dataSourceText">Data: Google Sheets</span>
-            <span id="profileCount"></span>
-            <div id="debugInfo" style="font-size: 11px; opacity: 0.7; margin-top: 5px;"></div>
-            <div id="layoutInfo" style="font-size: 11px; opacity: 0.8; margin-top: 3px; color: #28a745;"></div>
-        </div>
-
         <!-- Loading indicator -->
         <div id="loadingIndicator" class="loading">
             <div class="spinner"></div>
-            <p id="loadingText">Loading data from Google Sheets...</p>
+            <p>Loading profiles from Google Sheets...</p>
         </div>
 
         <!-- 3D Container -->
         <div id="container" class="visualization-container"></div>
+
+        <!-- Controls - Bottom positioned like original -->
+        <div id="menu" class="menu">
+            <button id="table">TABLE</button>
+            <button id="sphere">SPHERE</button>
+            <button id="helix">HELIX</button>
+            <button id="grid">GRID</button>
+            <button id="logout" onclick="logout()" class="logout-btn">LOGOUT</button>
+        </div>
     </div>
 
     <script src="app.js"></script>
