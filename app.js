@@ -7,6 +7,40 @@ let targets = { table: [], sphere: [], helix: [], grid: [] };
 let profileData = [];
 let isAuthenticated = false;
 
+// TEST MODE - Set to true to bypass authentication for debugging
+const TEST_MODE = true;
+
+// Authentication handling
+function appHandleCredentialResponse(response) {
+    console.log('Login successful:', response);
+    isAuthenticated = true;
+    
+    // Hide login screen and show app
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('appContainer').style.display = 'block';
+    
+    // Initialize the 3D visualization
+    init();
+    animate();
+}
+
+// Make the handler globally available
+window.appHandleCredentialResponse = appHandleCredentialResponse;
+
+// Auto-start in test mode
+if (TEST_MODE) {
+    console.log('🧪 TEST MODE: Bypassing authentication');
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            isAuthenticated = true;
+            init();
+            animate();
+        }, 1000);
+    });
+}
+
 // Authentication handling
 function appHandleCredentialResponse(response) {
     console.log('Login successful:', response);
@@ -83,6 +117,9 @@ async function init() {
         // Hide loading indicator
         document.getElementById('loadingIndicator').style.display = 'none';
         
+        // Force initial render
+        render();
+        
         console.log(`🎉 Application ready with ${profileData.length} profiles!`);
         
     } catch (error) {
@@ -98,11 +135,11 @@ async function init() {
 function waitForThreeJS() {
     return new Promise((resolve) => {
         function check() {
-            if (typeof THREE !== 'undefined' && typeof TWEEN !== 'undefined') {
+            if (typeof THREE !== 'undefined' && typeof TWEEN !== 'undefined' && window.threeJSReady) {
                 console.log('✅ Three.js and TWEEN ready');
                 resolve();
             } else {
-                console.log('⏳ Waiting for Three.js...');
+                console.log('⏳ Waiting for Three.js components...');
                 setTimeout(check, 100);
             }
         }
@@ -151,8 +188,33 @@ async function fetchProfileData() {
         
     } catch (error) {
         console.error('❌ Error fetching profile data:', error);
-        throw error;
+        console.log('🔄 Using fallback test data...');
+        
+        // Fallback test data
+        profileData = generateTestData();
+        console.log(`✅ Using ${profileData.length} test profiles`);
     }
+}
+
+// Generate test data for debugging
+function generateTestData() {
+    const testData = [];
+    const names = ['John Smith', 'Jane Doe', 'Mike Johnson', 'Sarah Wilson', 'David Brown', 'Lisa Davis', 'Tom Miller', 'Anna Garcia', 'Chris Martinez', 'Emma Rodriguez'];
+    const countries = ['USA', 'Canada', 'UK', 'Germany', 'France', 'Japan', 'Australia', 'Brazil', 'India', 'China'];
+    const interests = ['Technology', 'Sports', 'Music', 'Art', 'Science', 'Travel', 'Food', 'Books', 'Movies', 'Gaming'];
+    
+    for (let i = 0; i < 50; i++) {
+        testData.push({
+            name: names[i % names.length] + ` ${i + 1}`,
+            photo: `https://via.placeholder.com/60x60/0,127,127/fff?text=${(names[i % names.length]).charAt(0)}`,
+            age: 25 + (i % 40),
+            country: countries[i % countries.length],
+            interest: interests[i % interests.length],
+            netWorth: 50000 + (i * 10000)
+        });
+    }
+    
+    return testData;
 }
 
 // Parse CSV data into profile objects
@@ -250,7 +312,7 @@ function initThreeJS() {
     
     const container = document.getElementById('container');
     
-    // Double-check all components are available
+    // Wait for Three.js components to be ready
     if (typeof THREE === 'undefined') {
         console.log('Waiting for THREE.js to load...');
         setTimeout(initThreeJS, 100);
@@ -270,7 +332,6 @@ function initThreeJS() {
     }
     
     console.log('✅ All Three.js libraries loaded, initializing scene...');
-    console.log('THREE.js version:', THREE.REVISION);
     
     try {
         // Create camera
@@ -283,6 +344,7 @@ function initThreeJS() {
         // Create renderer
         renderer = new THREE.CSS3DRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.position = 'absolute';
         container.appendChild(renderer.domElement);
         
         // Create controls
@@ -308,6 +370,7 @@ function createElements() {
     
     // Double-check that CSS3DObject is available
     if (typeof THREE.CSS3DObject === 'undefined') {
+        console.error('❌ THREE.CSS3DObject is not available. Please check Three.js loading.');
         throw new Error('THREE.CSS3DObject is not available. Please check Three.js loading.');
     }
     
@@ -318,8 +381,8 @@ function createElements() {
         const profile = profileData[i];
         
         // Log first and last few profiles for verification
-        if (i < 5 || i >= profileData.length - 5) {
-            console.log(`👤 Profile ${i + 1}: ${profile.name} (${profile.country})`);
+        if (i < 3 || i >= profileData.length - 3) {
+            console.log(`👤 Creating Profile ${i + 1}: ${profile.name} (${profile.country})`);
         }
         
         try {
@@ -366,6 +429,11 @@ function createElements() {
             scene.add(objectCSS);
             objects.push(objectCSS);
             successCount++;
+            
+            // Log progress every 50 elements
+            if ((i + 1) % 50 === 0) {
+                console.log(`📊 Progress: ${i + 1}/${profileData.length} elements created`);
+            }
         } catch (error) {
             errorCount++;
             console.error(`❌ Error creating element ${i + 1} (${profile.name}):`, error);
@@ -379,15 +447,17 @@ function createElements() {
     console.log(`   Total objects in scene: ${objects.length}`);
     
     // Verify specific profiles were created
-    const firstElement = objects[0];
-    const lastElement = objects[objects.length - 1];
-    if (firstElement && firstElement.element) {
-        const firstName = firstElement.element.getAttribute('data-name');
-        console.log(`🎯 First element: ${firstName}`);
-    }
-    if (lastElement && lastElement.element) {
-        const lastName = lastElement.element.getAttribute('data-name');
-        console.log(`🎯 Last element: ${lastName}`);
+    if (objects.length > 0) {
+        const firstElement = objects[0];
+        const lastElement = objects[objects.length - 1];
+        if (firstElement && firstElement.element) {
+            const firstName = firstElement.element.getAttribute('data-name');
+            console.log(`🎯 First element: ${firstName}`);
+        }
+        if (lastElement && lastElement.element) {
+            const lastName = lastElement.element.getAttribute('data-name');
+            console.log(`🎯 Last element: ${lastName}`);
+        }
     }
 }
 
