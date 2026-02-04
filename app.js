@@ -179,7 +179,7 @@ function parseCSV(text) {
 }
 
 function generateSampleData() {
-    // Periodic table elements with proper symbols and names
+    // Complete periodic table elements (118 elements)
     const periodicElements = [
         { symbol: 'H', name: 'Hydrogen' }, { symbol: 'He', name: 'Helium' },
         { symbol: 'Li', name: 'Lithium' }, { symbol: 'Be', name: 'Beryllium' }, { symbol: 'B', name: 'Boron' }, 
@@ -193,7 +193,35 @@ function generateSampleData() {
         { symbol: 'Mn', name: 'Manganese' }, { symbol: 'Fe', name: 'Iron' }, { symbol: 'Co', name: 'Cobalt' }, 
         { symbol: 'Ni', name: 'Nickel' }, { symbol: 'Cu', name: 'Copper' }, { symbol: 'Zn', name: 'Zinc' }, 
         { symbol: 'Ga', name: 'Gallium' }, { symbol: 'Ge', name: 'Germanium' }, { symbol: 'As', name: 'Arsenic' }, 
-        { symbol: 'Se', name: 'Selenium' }, { symbol: 'Br', name: 'Bromine' }, { symbol: 'Kr', name: 'Krypton' }
+        { symbol: 'Se', name: 'Selenium' }, { symbol: 'Br', name: 'Bromine' }, { symbol: 'Kr', name: 'Krypton' },
+        { symbol: 'Rb', name: 'Rubidium' }, { symbol: 'Sr', name: 'Strontium' }, { symbol: 'Y', name: 'Yttrium' }, 
+        { symbol: 'Zr', name: 'Zirconium' }, { symbol: 'Nb', name: 'Niobium' }, { symbol: 'Mo', name: 'Molybdenum' }, 
+        { symbol: 'Tc', name: 'Technetium' }, { symbol: 'Ru', name: 'Ruthenium' }, { symbol: 'Rh', name: 'Rhodium' }, 
+        { symbol: 'Pd', name: 'Palladium' }, { symbol: 'Ag', name: 'Silver' }, { symbol: 'Cd', name: 'Cadmium' }, 
+        { symbol: 'In', name: 'Indium' }, { symbol: 'Sn', name: 'Tin' }, { symbol: 'Sb', name: 'Antimony' }, 
+        { symbol: 'Te', name: 'Tellurium' }, { symbol: 'I', name: 'Iodine' }, { symbol: 'Xe', name: 'Xenon' },
+        { symbol: 'Cs', name: 'Cesium' }, { symbol: 'Ba', name: 'Barium' }, { symbol: 'La', name: 'Lanthanum' }, 
+        { symbol: 'Ce', name: 'Cerium' }, { symbol: 'Pr', name: 'Praseodymium' }, { symbol: 'Nd', name: 'Neodymium' }, 
+        { symbol: 'Pm', name: 'Promethium' }, { symbol: 'Sm', name: 'Samarium' }, { symbol: 'Eu', name: 'Europium' }, 
+        { symbol: 'Gd', name: 'Gadolinium' }, { symbol: 'Tb', name: 'Terbium' }, { symbol: 'Dy', name: 'Dysprosium' }, 
+        { symbol: 'Ho', name: 'Holmium' }, { symbol: 'Er', name: 'Erbium' }, { symbol: 'Tm', name: 'Thulium' }, 
+        { symbol: 'Yb', name: 'Ytterbium' }, { symbol: 'Lu', name: 'Lutetium' }, { symbol: 'Hf', name: 'Hafnium' }, 
+        { symbol: 'Ta', name: 'Tantalum' }, { symbol: 'W', name: 'Tungsten' }, { symbol: 'Re', name: 'Rhenium' }, 
+        { symbol: 'Os', name: 'Osmium' }, { symbol: 'Ir', name: 'Iridium' }, { symbol: 'Pt', name: 'Platinum' }, 
+        { symbol: 'Au', name: 'Gold' }, { symbol: 'Hg', name: 'Mercury' }, { symbol: 'Tl', name: 'Thallium' }, 
+        { symbol: 'Pb', name: 'Lead' }, { symbol: 'Bi', name: 'Bismuth' }, { symbol: 'Po', name: 'Polonium' }, 
+        { symbol: 'At', name: 'Astatine' }, { symbol: 'Rn', name: 'Radon' },
+        { symbol: 'Fr', name: 'Francium' }, { symbol: 'Ra', name: 'Radium' }, { symbol: 'Ac', name: 'Actinium' }, 
+        { symbol: 'Th', name: 'Thorium' }, { symbol: 'Pa', name: 'Protactinium' }, { symbol: 'U', name: 'Uranium' }, 
+        { symbol: 'Np', name: 'Neptunium' }, { symbol: 'Pu', name: 'Plutonium' }, { symbol: 'Am', name: 'Americium' }, 
+        { symbol: 'Cm', name: 'Curium' }, { symbol: 'Bk', name: 'Berkelium' }, { symbol: 'Cf', name: 'Californium' }, 
+        { symbol: 'Es', name: 'Einsteinium' }, { symbol: 'Fm', name: 'Fermium' }, { symbol: 'Md', name: 'Mendelevium' }, 
+        { symbol: 'No', name: 'Nobelium' }, { symbol: 'Lr', name: 'Lawrencium' }, { symbol: 'Rf', name: 'Rutherfordium' }, 
+        { symbol: 'Db', name: 'Dubnium' }, { symbol: 'Sg', name: 'Seaborgium' }, { symbol: 'Bh', name: 'Bohrium' }, 
+        { symbol: 'Hs', name: 'Hassium' }, { symbol: 'Mt', name: 'Meitnerium' }, { symbol: 'Ds', name: 'Darmstadtium' }, 
+        { symbol: 'Rg', name: 'Roentgenium' }, { symbol: 'Cn', name: 'Copernicium' }, { symbol: 'Nh', name: 'Nihonium' }, 
+        { symbol: 'Fl', name: 'Flerovium' }, { symbol: 'Mc', name: 'Moscovium' }, { symbol: 'Lv', name: 'Livermorium' }, 
+        { symbol: 'Ts', name: 'Tennessine' }, { symbol: 'Og', name: 'Oganesson' }
     ];
     
     const profilePhotos = [
@@ -202,23 +230,42 @@ function generateSampleData() {
         'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face'
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face'
     ];
     
-    const names = ['John Smith', 'Sarah Johnson', 'Michael Brown', 'Emily Davis', 'David Wilson', 'Lisa Anderson'];
+    const names = [
+        'John Smith', 'Sarah Johnson', 'Michael Brown', 'Emily Davis', 'David Wilson', 'Lisa Anderson',
+        'James Miller', 'Jessica Garcia', 'Robert Martinez', 'Ashley Rodriguez', 'Christopher Lee', 'Amanda Walker',
+        'Matthew Hall', 'Stephanie Allen', 'Daniel Young', 'Michelle King', 'Anthony Wright', 'Kimberly Lopez',
+        'Mark Hill', 'Laura Scott', 'Steven Green', 'Rebecca Adams', 'Paul Baker', 'Sharon Nelson',
+        'Andrew Carter', 'Cynthia Mitchell', 'Joshua Perez', 'Angela Roberts', 'Kenneth Turner', 'Brenda Phillips'
+    ];
     
-    // Predefined realistic net worth values
+    // Extended realistic net worth values for all 118 elements
     const netWorthValues = [
         250000, 180000, 320000, 95000, 450000, 275000, 150000, 380000, 220000, 190000,
         310000, 85000, 420000, 165000, 290000, 340000, 125000, 480000, 210000, 360000,
         140000, 395000, 175000, 260000, 330000, 115000, 410000, 185000, 270000, 350000,
-        160000, 425000, 195000, 280000, 370000, 135000
+        160000, 425000, 195000, 280000, 370000, 135000, 440000, 205000, 315000, 385000,
+        155000, 465000, 225000, 295000, 355000, 145000, 475000, 235000, 305000, 375000,
+        165000, 485000, 245000, 285000, 365000, 175000, 495000, 255000, 325000, 395000,
+        185000, 505000, 265000, 335000, 405000, 195000, 515000, 275000, 345000, 415000,
+        205000, 525000, 285000, 355000, 425000, 215000, 535000, 295000, 365000, 435000,
+        225000, 545000, 305000, 375000, 445000, 235000, 555000, 315000, 385000, 455000,
+        245000, 565000, 325000, 395000, 465000, 255000, 575000, 335000, 405000, 475000,
+        265000, 585000, 345000, 415000, 485000, 275000, 595000, 355000, 425000, 495000,
+        285000, 605000, 365000, 435000, 505000, 295000, 615000, 375000
     ];
     
     const sampleData = [];
     
-    for (let i = 0; i < Math.min(118, periodicElements.length); i++) {
-        const element = periodicElements[i] || { symbol: 'X' + i, name: 'Element ' + i };
+    // Generate data for all 118 elements
+    for (let i = 0; i < periodicElements.length; i++) {
+        const element = periodicElements[i];
         
         // Use predefined values or generate random ones
         const networth = netWorthValues[i] || (Math.random() * 400000 + 50000);
@@ -236,6 +283,8 @@ function generateSampleData() {
             Position: i + 1
         });
     }
+    
+    console.log(`Generated ${sampleData.length} elements with full periodic table data`);
     return sampleData;
 }
 
