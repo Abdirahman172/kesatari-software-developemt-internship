@@ -173,11 +173,21 @@ function generateSampleData() {
     
     const names = ['John Smith', 'Sarah Johnson', 'Michael Brown', 'Emily Davis', 'David Wilson', 'Lisa Anderson'];
     
+    // Predefined realistic net worth values
+    const netWorthValues = [
+        250000, 180000, 320000, 95000, 450000, 275000, 150000, 380000, 220000, 190000,
+        310000, 85000, 420000, 165000, 290000, 340000, 125000, 480000, 210000, 360000,
+        140000, 395000, 175000, 260000, 330000, 115000, 410000, 185000, 270000, 350000,
+        160000, 425000, 195000, 280000, 370000, 135000
+    ];
+    
     const sampleData = [];
     
     for (let i = 0; i < Math.min(118, periodicElements.length); i++) {
         const element = periodicElements[i] || { symbol: 'X' + i, name: 'Element ' + i };
-        const networth = Math.random() * 500000;
+        
+        // Use predefined values or generate random ones
+        const networth = netWorthValues[i] || (Math.random() * 400000 + 50000);
         
         // All elements use teal/cyan color scheme
         const color = '#008B8B'; // Dark cyan/teal color
@@ -219,7 +229,9 @@ function init3D() {
 
         const details = document.createElement('div');
         details.className = 'details';
-        details.innerHTML = `${data[i].ElementName || data[i].Name || 'Unknown'}<br>${formatNetWorth(data[i].NetWorth)}`;
+        const displayName = data[i].ElementName || data[i].Name || 'Unknown';
+        const displayNetWorth = formatNetWorth(data[i].NetWorth);
+        details.innerHTML = `${displayName}<br>${displayNetWorth}`;
         element.appendChild(details);
 
         // Add photo - show by default
@@ -331,8 +343,8 @@ function getColorByNetWorth(networth) {
 function formatNetWorth(networth) {
     const value = parseFloat(networth) || 0;
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-    return `$${value.toFixed(0)}`;
+    if (value >= 1000) return `$${Math.floor(value / 1000)}K`;
+    return `$${Math.floor(value)}`;
 }
 
 function selectElement(element, index) {

@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Abdirahman172/kasatari-software-developer-ineternship.git"
+    "url": "git+https://github.com/Abdirahman172/kesatari-software-developemt-internship.git"
   },
   "keywords": [
     "3d",
@@ -24,11 +24,12 @@
   "author": "Abdirahman172",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Abdirahman172/kasatari-software-developer-ineternship/issues"
+    "url": "https://github.com/Abdirahman172/kesatari-software-developemt-internship/issues"
   },
-  "homepage": "https://abdirahman172.github.io/kasatari-software-developer-ineternship/",
-  "dependencies": {},
-  "devDependencies": {},
+  "homepage": "https://abdirahman172.github.io/kesatari-software-developemt-internship/",
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  },
   "engines": {
     "node": ">=14.0.0"
   }
