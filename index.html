@@ -37,20 +37,20 @@
         .element {
             width: 120px;
             height: 160px;
-            box-shadow: 0px 0px 12px rgba(0,139,139,0.5);
-            border: 2px solid rgba(0,139,139,0.6);
+            box-shadow: 0px 0px 12px rgba(0,255,255,0.5);
+            border: 2px solid rgba(127,255,255,0.6);
             text-align: center;
             cursor: pointer;
             transform-style: preserve-3d;
             transition: all 0.3s ease;
             position: relative;
             border-radius: 8px;
-            background: linear-gradient(135deg, #008B8B, #006666);
+            /* Background color will be set dynamically based on net worth */
         }
 
         .element:hover {
-            box-shadow: 0px 0px 20px rgba(0,139,139,0.8);
-            border: 2px solid rgba(0,139,139,0.9);
+            box-shadow: 0px 0px 20px rgba(255,255,255,0.8);
+            border: 2px solid rgba(255,255,255,0.9);
             transform: scale(1.05);
         }
 
@@ -256,20 +256,15 @@
             margin-bottom: 8px;
         }
 
-        .photo-card.teal { 
-            border-color: #008B8B; 
-            background: linear-gradient(135deg, #1a4a4a, #153a3a);
-            box-shadow: 0 0 10px rgba(0,139,139,0.3);
-        }
         .photo-card.red { 
             border-color: #ff4444; 
             background: linear-gradient(135deg, #4a1a1a, #3a1515);
             box-shadow: 0 0 10px rgba(255,68,68,0.3);
         }
         .photo-card.yellow { 
-            border-color: #ffaa44; 
+            border-color: #ff8844; 
             background: linear-gradient(135deg, #4a3a1a, #3a2a15);
-            box-shadow: 0 0 10px rgba(255,170,68,0.3);
+            box-shadow: 0 0 10px rgba(255,136,68,0.3);
         }
         .photo-card.green { 
             border-color: #44ff44; 
@@ -393,8 +388,16 @@
 
     <div class="color-legend">
         <div class="legend-item">
-            <span class="legend-color" style="background-color: #008B8B;"></span>
-            Teal: Data Elements
+            <span class="legend-color" style="background-color: #ff4444;"></span>
+            Red: &lt; $100K
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #ff8844;"></span>
+            Orange: $100K - $200K
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #44ff44;"></span>
+            Green: &gt; $200K
         </div>
     </div>
 

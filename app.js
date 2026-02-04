@@ -310,7 +310,7 @@ function generateSampleData() {
             ElementName: element.name,
             NetWorth: Math.floor(networth),
             Photo: profilePhotos[i % profilePhotos.length],
-            Color: '#008B8B',
+            Color: getColorByNetWorth(networth), // Color based on net worth
             Position: i + 1
         });
     }
@@ -457,8 +457,10 @@ function init3D() {
 }
 
 function getColorByNetWorth(networth) {
-    // Use consistent teal/cyan color scheme
-    return '#008B8B'; // Dark cyan/teal
+    const value = parseFloat(networth) || 0;
+    if (value < 100000) return '#ff4444'; // Red for < $100K
+    if (value >= 100000 && value < 200000) return '#ff8844'; // Orange for $100K-$200K
+    return '#44ff44'; // Green for >= $200K
 }
 
 function expandDataToFullTable(csvData) {
@@ -558,7 +560,7 @@ function expandDataToFullTable(csvData) {
             NetWorth: Math.floor(netWorth),
             Description: description,
             Photo: profilePhotos[i % profilePhotos.length],
-            Color: '#008B8B',
+            Color: getColorByNetWorth(netWorth), // Color based on net worth
             Position: i + 1
         });
     }
@@ -661,10 +663,16 @@ function openPhotoPopup() {
     if (window.selectedElementData) {
         const selectedData = window.selectedElementData;
         
+        // Determine color class based on net worth
+        let colorClass = 'red';
+        const netWorth = parseFloat(selectedData.NetWorth) || 0;
+        if (netWorth >= 200000) colorClass = 'green';
+        else if (netWorth >= 100000) colorClass = 'yellow';
+        
         // Show the selected person's photo 3 times in the top row only
         for (let i = 0; i < 3; i++) {
             const card = document.createElement('div');
-            card.className = 'photo-card teal selected-card';
+            card.className = `photo-card ${colorClass} selected-card`;
             card.innerHTML = `
                 <img src="${selectedData.Photo}" alt="${selectedData.Name}" onerror="this.src='https://via.placeholder.com/100/008B8B/fff?text=${selectedData.Symbol}'">
                 <div class="name">${selectedData.Name}</div>
@@ -677,32 +685,38 @@ function openPhotoPopup() {
             { 
                 name: 'John Smith', 
                 photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-                color: 'teal' 
+                netWorth: 250000,
+                color: 'green' 
             },
             { 
                 name: 'Sarah Johnson', 
                 photo: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
-                color: 'teal' 
+                netWorth: 180000,
+                color: 'yellow' 
             },
             { 
                 name: 'Michael Brown', 
                 photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-                color: 'teal' 
+                netWorth: 320000,
+                color: 'green' 
             },
             { 
                 name: 'Emily Davis', 
                 photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-                color: 'teal' 
+                netWorth: 95000,
+                color: 'red' 
             },
             { 
                 name: 'David Wilson', 
                 photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
-                color: 'teal' 
+                netWorth: 450000,
+                color: 'green' 
             },
             { 
                 name: 'Lisa Anderson', 
                 photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
-                color: 'teal' 
+                netWorth: 275000,
+                color: 'green' 
             }
         ];
         
