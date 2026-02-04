@@ -104,20 +104,14 @@ async function init() {
         data = generateSampleData();
     }
 
-    // Ensure we have data with valid NetWorth values
+    // Ensure we have data
     if (!data || data.length === 0) {
         console.log('No data loaded, using sample data');
         data = generateSampleData();
     }
 
-    // Check if NetWorth values are missing or zero, if so use sample data
-    const hasValidNetWorth = data.some(item => item.NetWorth && parseFloat(item.NetWorth) > 0);
-    if (!hasValidNetWorth) {
-        console.log('NetWorth data missing or invalid, using sample data');
-        data = generateSampleData();
-    }
-
-    console.log('Final data check - first item NetWorth:', data[0]?.NetWorth);
+    console.log(`Final data loaded: ${data.length} elements`);
+    console.log('Sample element:', data[0]);
 
     const loading = document.getElementById('loading');
     if (loading) loading.style.display = 'none';
@@ -133,17 +127,21 @@ async function init() {
 
 async function loadDataFromCSV() {
     try {
+        console.log('Loading data from Google Sheets...');
         const res = await fetch(CSV_URL);
         if (!res.ok) throw new Error('Network response not ok');
         const text = await res.text();
-        const csvData = parseCSV(text);
+        console.log('Raw CSV data:', text.substring(0, 200) + '...');
         
-        // If CSV data is valid and has NetWorth values, use it
-        if (csvData.length > 0 && csvData[0].NetWorth && parseFloat(csvData[0].NetWorth) > 0) {
-            data = csvData;
-            console.log('Loaded CSV data with', data.length, 'rows');
+        const csvData = parseCSV(text);
+        console.log('Parsed CSV data:', csvData.length, 'rows');
+        
+        // If we have valid CSV data, use it and expand it to fill the periodic table
+        if (csvData.length > 0) {
+            data = expandDataToFullTable(csvData);
+            console.log('Expanded data to', data.length, 'elements');
         } else {
-            // Use sample data if CSV fails or has no valid NetWorth data
+            // Use sample data if CSV is completely empty
             data = generateSampleData();
             console.log('Using sample data with', data.length, 'rows');
         }
@@ -155,26 +153,58 @@ async function loadDataFromCSV() {
 }
 
 function parseCSV(text) {
-    const lines = text.split(/\r?\n/).filter(Boolean);
+    const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+    console.log('CSV lines found:', lines.length);
+    
     if (lines.length === 0) {
-        return generateSampleData();
+        console.log('No CSV lines found');
+        return [];
     }
-    const headers = lines[0].split(',').map(h => h.trim());
-    const rows = lines.slice(1).map(line => {
-        const cols = line.split(',');
+    
+    // Handle the case where the first line might not be headers
+    let headers, dataLines;
+    
+    // Check if first line looks like headers (contains common field names)
+    const firstLine = lines[0].toLowerCase();
+    if (firstLine.includes('name') || firstLine.includes('title') || firstLine.includes('networth') || firstLine.includes('description')) {
+        headers = lines[0].split(',').map(h => h.trim());
+        dataLines = lines.slice(1);
+    } else {
+        // If no clear headers, create default ones
+        const firstRowCols = lines[0].split(',').length;
+        headers = ['Name', 'Title', 'Description', 'NetWorth'].slice(0, firstRowCols);
+        // Pad with generic headers if needed
+        while (headers.length < firstRowCols) {
+            headers.push(`Field${headers.length + 1}`);
+        }
+        dataLines = lines;
+    }
+    
+    console.log('Headers:', headers);
+    
+    const rows = dataLines.map((line, index) => {
+        const cols = line.split(',').map(col => col.trim());
         const obj = {};
-        headers.forEach((h, i) => obj[h] = (cols[i] || '').trim());
+        
+        headers.forEach((header, i) => {
+            obj[header] = cols[i] || '';
+        });
+        
+        // Ensure we have required fields
+        if (!obj.Name && !obj.name) {
+            obj.Name = `Person ${index + 1}`;
+        }
+        if (!obj.NetWorth && !obj.networth && !obj.Networth) {
+            obj.NetWorth = Math.floor(Math.random() * 400000 + 50000);
+        }
+        
         return obj;
+    }).filter(row => {
+        // Filter out completely empty rows
+        return Object.values(row).some(value => value && value.toString().trim().length > 0);
     });
     
-    // Check if we have valid NetWorth data
-    const hasValidNetWorth = rows.some(row => row.NetWorth && parseFloat(row.NetWorth) > 0);
-    
-    if (rows.length === 0 || !hasValidNetWorth) {
-        console.log('CSV data invalid or missing NetWorth, using sample data');
-        return generateSampleData();
-    }
-    
+    console.log('Parsed rows:', rows.length);
     return rows;
 }
 
@@ -428,6 +458,94 @@ function init3D() {
 function getColorByNetWorth(networth) {
     // Use consistent teal/cyan color scheme
     return '#008B8B'; // Dark cyan/teal
+}
+
+function expandDataToFullTable(csvData) {
+    // Complete periodic table elements (118 elements)
+    const periodicElements = [
+        { symbol: 'H', name: 'Hydrogen' }, { symbol: 'He', name: 'Helium' },
+        { symbol: 'Li', name: 'Lithium' }, { symbol: 'Be', name: 'Beryllium' }, { symbol: 'B', name: 'Boron' }, 
+        { symbol: 'C', name: 'Carbon' }, { symbol: 'N', name: 'Nitrogen' }, { symbol: 'O', name: 'Oxygen' }, 
+        { symbol: 'F', name: 'Fluorine' }, { symbol: 'Ne', name: 'Neon' },
+        { symbol: 'Na', name: 'Sodium' }, { symbol: 'Mg', name: 'Magnesium' }, { symbol: 'Al', name: 'Aluminum' }, 
+        { symbol: 'Si', name: 'Silicon' }, { symbol: 'P', name: 'Phosphorus' }, { symbol: 'S', name: 'Sulfur' }, 
+        { symbol: 'Cl', name: 'Chlorine' }, { symbol: 'Ar', name: 'Argon' },
+        { symbol: 'K', name: 'Potassium' }, { symbol: 'Ca', name: 'Calcium' }, { symbol: 'Sc', name: 'Scandium' }, 
+        { symbol: 'Ti', name: 'Titanium' }, { symbol: 'V', name: 'Vanadium' }, { symbol: 'Cr', name: 'Chromium' }, 
+        { symbol: 'Mn', name: 'Manganese' }, { symbol: 'Fe', name: 'Iron' }, { symbol: 'Co', name: 'Cobalt' }, 
+        { symbol: 'Ni', name: 'Nickel' }, { symbol: 'Cu', name: 'Copper' }, { symbol: 'Zn', name: 'Zinc' }, 
+        { symbol: 'Ga', name: 'Gallium' }, { symbol: 'Ge', name: 'Germanium' }, { symbol: 'As', name: 'Arsenic' }, 
+        { symbol: 'Se', name: 'Selenium' }, { symbol: 'Br', name: 'Bromine' }, { symbol: 'Kr', name: 'Krypton' },
+        { symbol: 'Rb', name: 'Rubidium' }, { symbol: 'Sr', name: 'Strontium' }, { symbol: 'Y', name: 'Yttrium' }, 
+        { symbol: 'Zr', name: 'Zirconium' }, { symbol: 'Nb', name: 'Niobium' }, { symbol: 'Mo', name: 'Molybdenum' }, 
+        { symbol: 'Tc', name: 'Technetium' }, { symbol: 'Ru', name: 'Ruthenium' }, { symbol: 'Rh', name: 'Rhodium' }, 
+        { symbol: 'Pd', name: 'Palladium' }, { symbol: 'Ag', name: 'Silver' }, { symbol: 'Cd', name: 'Cadmium' }, 
+        { symbol: 'In', name: 'Indium' }, { symbol: 'Sn', name: 'Tin' }, { symbol: 'Sb', name: 'Antimony' }, 
+        { symbol: 'Te', name: 'Tellurium' }, { symbol: 'I', name: 'Iodine' }, { symbol: 'Xe', name: 'Xenon' },
+        { symbol: 'Cs', name: 'Cesium' }, { symbol: 'Ba', name: 'Barium' }, { symbol: 'La', name: 'Lanthanum' }, 
+        { symbol: 'Ce', name: 'Cerium' }, { symbol: 'Pr', name: 'Praseodymium' }, { symbol: 'Nd', name: 'Neodymium' }, 
+        { symbol: 'Pm', name: 'Promethium' }, { symbol: 'Sm', name: 'Samarium' }, { symbol: 'Eu', name: 'Europium' }, 
+        { symbol: 'Gd', name: 'Gadolinium' }, { symbol: 'Tb', name: 'Terbium' }, { symbol: 'Dy', name: 'Dysprosium' }, 
+        { symbol: 'Ho', name: 'Holmium' }, { symbol: 'Er', name: 'Erbium' }, { symbol: 'Tm', name: 'Thulium' }, 
+        { symbol: 'Yb', name: 'Ytterbium' }, { symbol: 'Lu', name: 'Lutetium' }, { symbol: 'Hf', name: 'Hafnium' }, 
+        { symbol: 'Ta', name: 'Tantalum' }, { symbol: 'W', name: 'Tungsten' }, { symbol: 'Re', name: 'Rhenium' }, 
+        { symbol: 'Os', name: 'Osmium' }, { symbol: 'Ir', name: 'Iridium' }, { symbol: 'Pt', name: 'Platinum' }, 
+        { symbol: 'Au', name: 'Gold' }, { symbol: 'Hg', name: 'Mercury' }, { symbol: 'Tl', name: 'Thallium' }, 
+        { symbol: 'Pb', name: 'Lead' }, { symbol: 'Bi', name: 'Bismuth' }, { symbol: 'Po', name: 'Polonium' }, 
+        { symbol: 'At', name: 'Astatine' }, { symbol: 'Rn', name: 'Radon' },
+        { symbol: 'Fr', name: 'Francium' }, { symbol: 'Ra', name: 'Radium' }, { symbol: 'Ac', name: 'Actinium' }, 
+        { symbol: 'Th', name: 'Thorium' }, { symbol: 'Pa', name: 'Protactinium' }, { symbol: 'U', name: 'Uranium' }, 
+        { symbol: 'Np', name: 'Neptunium' }, { symbol: 'Pu', name: 'Plutonium' }, { symbol: 'Am', name: 'Americium' }, 
+        { symbol: 'Cm', name: 'Curium' }, { symbol: 'Bk', name: 'Berkelium' }, { symbol: 'Cf', name: 'Californium' }, 
+        { symbol: 'Es', name: 'Einsteinium' }, { symbol: 'Fm', name: 'Fermium' }, { symbol: 'Md', name: 'Mendelevium' }, 
+        { symbol: 'No', name: 'Nobelium' }, { symbol: 'Lr', name: 'Lawrencium' }, { symbol: 'Rf', name: 'Rutherfordium' }, 
+        { symbol: 'Db', name: 'Dubnium' }, { symbol: 'Sg', name: 'Seaborgium' }, { symbol: 'Bh', name: 'Bohrium' }, 
+        { symbol: 'Hs', name: 'Hassium' }, { symbol: 'Mt', name: 'Meitnerium' }, { symbol: 'Ds', name: 'Darmstadtium' }, 
+        { symbol: 'Rg', name: 'Roentgenium' }, { symbol: 'Cn', name: 'Copernicium' }, { symbol: 'Nh', name: 'Nihonium' }, 
+        { symbol: 'Fl', name: 'Flerovium' }, { symbol: 'Mc', name: 'Moscovium' }, { symbol: 'Lv', name: 'Livermorium' }, 
+        { symbol: 'Ts', name: 'Tennessine' }, { symbol: 'Og', name: 'Oganesson' }
+    ];
+
+    const profilePhotos = [
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face'
+    ];
+
+    const expandedData = [];
+    
+    // Create 118 elements using CSV data as base and cycling through it
+    for (let i = 0; i < periodicElements.length; i++) {
+        const element = periodicElements[i];
+        const csvIndex = i % csvData.length; // Cycle through CSV data
+        const csvRow = csvData[csvIndex];
+        
+        // Extract data from CSV row, handling different possible field names
+        const name = csvRow.Name || csvRow.name || csvRow.Title || csvRow.title || `Person ${i + 1}`;
+        const netWorth = parseFloat(csvRow.NetWorth || csvRow.networth || csvRow.Networth || 0) || (Math.random() * 400000 + 50000);
+        const description = csvRow.Description || csvRow.description || element.name;
+        
+        expandedData.push({
+            Name: name,
+            Symbol: element.symbol,
+            ElementName: element.name,
+            NetWorth: Math.floor(netWorth),
+            Description: description,
+            Photo: profilePhotos[i % profilePhotos.length],
+            Color: '#008B8B',
+            Position: i + 1
+        });
+    }
+    
+    console.log(`Expanded ${csvData.length} CSV rows to ${expandedData.length} periodic table elements`);
+    return expandedData;
 }
 
 function formatNetWorth(networth) {
