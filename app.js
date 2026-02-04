@@ -101,7 +101,23 @@ async function init() {
         await loadDataFromCSV();
     } catch (err) {
         console.warn('loadDataFromCSV failed:', err);
+        data = generateSampleData();
     }
+
+    // Ensure we have data with valid NetWorth values
+    if (!data || data.length === 0) {
+        console.log('No data loaded, using sample data');
+        data = generateSampleData();
+    }
+
+    // Check if NetWorth values are missing or zero, if so use sample data
+    const hasValidNetWorth = data.some(item => item.NetWorth && parseFloat(item.NetWorth) > 0);
+    if (!hasValidNetWorth) {
+        console.log('NetWorth data missing or invalid, using sample data');
+        data = generateSampleData();
+    }
+
+    console.log('Final data check - first item NetWorth:', data[0]?.NetWorth);
 
     const loading = document.getElementById('loading');
     if (loading) loading.style.display = 'none';
@@ -120,18 +136,27 @@ async function loadDataFromCSV() {
         const res = await fetch(CSV_URL);
         if (!res.ok) throw new Error('Network response not ok');
         const text = await res.text();
-        data = parseCSV(text);
-        console.log('Loaded rows:', data.length);
+        const csvData = parseCSV(text);
+        
+        // If CSV data is valid and has NetWorth values, use it
+        if (csvData.length > 0 && csvData[0].NetWorth && parseFloat(csvData[0].NetWorth) > 0) {
+            data = csvData;
+            console.log('Loaded CSV data with', data.length, 'rows');
+        } else {
+            // Use sample data if CSV fails or has no valid NetWorth data
+            data = generateSampleData();
+            console.log('Using sample data with', data.length, 'rows');
+        }
     } catch (err) {
-        console.warn('Could not load CSV, using empty dataset:', err);
-        data = [];
+        console.warn('Could not load CSV, using sample data:', err);
+        data = generateSampleData();
+        console.log('Using sample data with', data.length, 'rows');
     }
 }
 
 function parseCSV(text) {
     const lines = text.split(/\r?\n/).filter(Boolean);
     if (lines.length === 0) {
-        // Generate sample data if CSV fails
         return generateSampleData();
     }
     const headers = lines[0].split(',').map(h => h.trim());
@@ -141,7 +166,16 @@ function parseCSV(text) {
         headers.forEach((h, i) => obj[h] = (cols[i] || '').trim());
         return obj;
     });
-    return rows.length > 0 ? rows : generateSampleData();
+    
+    // Check if we have valid NetWorth data
+    const hasValidNetWorth = rows.some(row => row.NetWorth && parseFloat(row.NetWorth) > 0);
+    
+    if (rows.length === 0 || !hasValidNetWorth) {
+        console.log('CSV data invalid or missing NetWorth, using sample data');
+        return generateSampleData();
+    }
+    
+    return rows;
 }
 
 function generateSampleData() {
@@ -230,7 +264,14 @@ function init3D() {
         const details = document.createElement('div');
         details.className = 'details';
         const displayName = data[i].ElementName || data[i].Name || 'Unknown';
-        const displayNetWorth = formatNetWorth(data[i].NetWorth);
+        const netWorthValue = data[i].NetWorth || 0;
+        const displayNetWorth = formatNetWorth(netWorthValue);
+        
+        // Debug logging for first few elements
+        if (i < 3) {
+            console.log(`Element ${i}: NetWorth=${netWorthValue}, Formatted=${displayNetWorth}`);
+        }
+        
         details.innerHTML = `${displayName}<br>${displayNetWorth}`;
         element.appendChild(details);
 
