@@ -209,7 +209,10 @@ function parseCSV(text) {
 }
 
 function generateSampleData() {
-    // Complete periodic table elements (118 elements)
+    // Create 200 elements with extended periodic table + synthetic elements
+    const allElements = [];
+    
+    // First 118 are real periodic table elements
     const periodicElements = [
         { symbol: 'H', name: 'Hydrogen' }, { symbol: 'He', name: 'Helium' },
         { symbol: 'Li', name: 'Lithium' }, { symbol: 'Be', name: 'Beryllium' }, { symbol: 'B', name: 'Boron' }, 
@@ -254,6 +257,17 @@ function generateSampleData() {
         { symbol: 'Ts', name: 'Tennessine' }, { symbol: 'Og', name: 'Oganesson' }
     ];
     
+    // Add all periodic elements
+    allElements.push(...periodicElements);
+    
+    // Add synthetic elements to reach 200 total
+    for (let i = 119; i <= 200; i++) {
+        allElements.push({
+            symbol: `E${i}`,
+            name: `Element ${i}`
+        });
+    }
+    
     const profilePhotos = [
         'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
@@ -264,7 +278,12 @@ function generateSampleData() {
         'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face'
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=100&h=100&fit=crop&crop=face'
     ];
     
     const names = [
@@ -272,36 +291,18 @@ function generateSampleData() {
         'James Miller', 'Jessica Garcia', 'Robert Martinez', 'Ashley Rodriguez', 'Christopher Lee', 'Amanda Walker',
         'Matthew Hall', 'Stephanie Allen', 'Daniel Young', 'Michelle King', 'Anthony Wright', 'Kimberly Lopez',
         'Mark Hill', 'Laura Scott', 'Steven Green', 'Rebecca Adams', 'Paul Baker', 'Sharon Nelson',
-        'Andrew Carter', 'Cynthia Mitchell', 'Joshua Perez', 'Angela Roberts', 'Kenneth Turner', 'Brenda Phillips'
-    ];
-    
-    // Extended realistic net worth values for all 118 elements
-    const netWorthValues = [
-        250000, 180000, 320000, 95000, 450000, 275000, 150000, 380000, 220000, 190000,
-        310000, 85000, 420000, 165000, 290000, 340000, 125000, 480000, 210000, 360000,
-        140000, 395000, 175000, 260000, 330000, 115000, 410000, 185000, 270000, 350000,
-        160000, 425000, 195000, 280000, 370000, 135000, 440000, 205000, 315000, 385000,
-        155000, 465000, 225000, 295000, 355000, 145000, 475000, 235000, 305000, 375000,
-        165000, 485000, 245000, 285000, 365000, 175000, 495000, 255000, 325000, 395000,
-        185000, 505000, 265000, 335000, 405000, 195000, 515000, 275000, 345000, 415000,
-        205000, 525000, 285000, 355000, 425000, 215000, 535000, 295000, 365000, 435000,
-        225000, 545000, 305000, 375000, 445000, 235000, 555000, 315000, 385000, 455000,
-        245000, 565000, 325000, 395000, 465000, 255000, 575000, 335000, 405000, 475000,
-        265000, 585000, 345000, 415000, 485000, 275000, 595000, 355000, 425000, 495000,
-        285000, 605000, 365000, 435000, 505000, 295000, 615000, 375000
+        'Andrew Carter', 'Cynthia Mitchell', 'Joshua Perez', 'Angela Roberts', 'Kenneth Turner', 'Brenda Phillips',
+        'Thomas Evans', 'Carol White', 'Brian Clark', 'Donna Lewis', 'Edward Robinson', 'Ruth Walker',
+        'Ronald Hall', 'Sharon Allen', 'Kevin Young', 'Lisa Hernandez', 'Jason King', 'Nancy Wright',
+        'Jeffrey Lopez', 'Karen Hill', 'Ryan Scott', 'Betty Green', 'Jacob Adams', 'Helen Baker'
     ];
     
     const sampleData = [];
     
-    // Generate data for all 118 elements
-    for (let i = 0; i < periodicElements.length; i++) {
-        const element = periodicElements[i];
-        
-        // Use predefined values or generate random ones
-        const networth = netWorthValues[i] || (Math.random() * 400000 + 50000);
-        
-        // All elements use teal/cyan color scheme
-        const color = '#008B8B'; // Dark cyan/teal color
+    // Generate data for all 200 elements
+    for (let i = 0; i < 200; i++) {
+        const element = allElements[i];
+        const networth = Math.random() * 500000 + 50000; // $50K to $550K
         
         sampleData.push({
             Name: names[i % names.length],
@@ -309,12 +310,12 @@ function generateSampleData() {
             ElementName: element.name,
             NetWorth: Math.floor(networth),
             Photo: profilePhotos[i % profilePhotos.length],
-            Color: color,
+            Color: '#008B8B',
             Position: i + 1
         });
     }
     
-    console.log(`Generated ${sampleData.length} elements with full periodic table data`);
+    console.log(`Generated ${sampleData.length} elements with extended data`);
     return sampleData;
 }
 
@@ -461,7 +462,7 @@ function getColorByNetWorth(networth) {
 }
 
 function expandDataToFullTable(csvData) {
-    // Complete periodic table elements (118 elements)
+    // Extended periodic table + synthetic elements to reach 200 total
     const periodicElements = [
         { symbol: 'H', name: 'Hydrogen' }, { symbol: 'He', name: 'Helium' },
         { symbol: 'Li', name: 'Lithium' }, { symbol: 'Be', name: 'Beryllium' }, { symbol: 'B', name: 'Boron' }, 
@@ -506,6 +507,17 @@ function expandDataToFullTable(csvData) {
         { symbol: 'Ts', name: 'Tennessine' }, { symbol: 'Og', name: 'Oganesson' }
     ];
 
+    // Add synthetic elements to reach 200 total
+    const additionalElements = [];
+    for (let i = 119; i <= 200; i++) {
+        additionalElements.push({
+            symbol: `E${i}`,
+            name: `Element ${i}`
+        });
+    }
+    
+    const allElements = [...periodicElements, ...additionalElements];
+
     const profilePhotos = [
         'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
@@ -516,14 +528,21 @@ function expandDataToFullTable(csvData) {
         'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=100&h=100&fit=crop&crop=face',
         'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face'
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1552058544-f2b08422138a?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop&crop=face',
+        'https://images.unsplash.com/photo-1607746882042-944635dfe10e?w=100&h=100&fit=crop&crop=face'
     ];
 
     const expandedData = [];
     
-    // Create 118 elements using CSV data as base and cycling through it
-    for (let i = 0; i < periodicElements.length; i++) {
-        const element = periodicElements[i];
+    console.log(`Creating 200 elements from ${csvData.length} CSV rows`);
+    
+    // Create exactly 200 elements using CSV data as base
+    for (let i = 0; i < 200; i++) {
+        const element = allElements[i];
         const csvIndex = i % csvData.length; // Cycle through CSV data
         const csvRow = csvData[csvIndex];
         
@@ -544,7 +563,7 @@ function expandDataToFullTable(csvData) {
         });
     }
     
-    console.log(`Expanded ${csvData.length} CSV rows to ${expandedData.length} periodic table elements`);
+    console.log(`Successfully created ${expandedData.length} elements from CSV data`);
     return expandedData;
 }
 
