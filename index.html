@@ -3,342 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Profile Visualization - Periodic Table Style</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
-    <!-- Three.js and TWEEN.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-    
-    <!-- CSS3DRenderer and TrackballControls -->
-    <script>
-        // Wait for THREE to be loaded
-        window.addEventListener('load', function() {
-            if (typeof THREE !== 'undefined') {
-                console.log('✅ THREE.js loaded successfully');
-                
-                // CSS3DObject
-                THREE.CSS3DObject = function ( element ) {
-                    THREE.Object3D.call( this );
-                    this.element = element;
-                    this.element.style.position = 'absolute';
-                    this.element.style.pointerEvents = 'auto';
-                };
-                THREE.CSS3DObject.prototype = Object.create( THREE.Object3D.prototype );
-                THREE.CSS3DObject.prototype.constructor = THREE.CSS3DObject;
-
-                // CSS3DRenderer
-                THREE.CSS3DRenderer = function ( parameters ) {
-                    var _this = this;
-                    var _width, _height;
-                    var _widthHalf, _heightHalf;
-                    var matrix = new THREE.Matrix4();
-                    var cache = {
-                        camera: { fov: 0, style: '' },
-                        objects: new WeakMap()
-                    };
-                    var domElement = document.createElement( 'div' );
-                    domElement.style.overflow = 'hidden';
-                    this.domElement = domElement;
-                    var cameraElement = document.createElement( 'div' );
-                    cameraElement.style.WebkitTransformStyle = 'preserve-3d';
-                    cameraElement.style.transformStyle = 'preserve-3d';
-                    domElement.appendChild( cameraElement );
-
-                    this.setSize = function ( width, height ) {
-                        _width = width;
-                        _height = height;
-                        _widthHalf = _width / 2;
-                        _heightHalf = _height / 2;
-                        domElement.style.width = width + 'px';
-                        domElement.style.height = height + 'px';
-                        cameraElement.style.width = width + 'px';
-                        cameraElement.style.height = height + 'px';
-                    };
-
-                    var epsilon = function ( value ) {
-                        return Math.abs( value ) < 1e-10 ? 0 : value;
-                    };
-
-                    var getCameraCSSMatrix = function ( matrix ) {
-                        var elements = matrix.elements;
-                        return 'matrix3d(' +
-                            epsilon( elements[ 0 ] ) + ',' +
-                            epsilon( - elements[ 1 ] ) + ',' +
-                            epsilon( elements[ 2 ] ) + ',' +
-                            epsilon( elements[ 3 ] ) + ',' +
-                            epsilon( elements[ 4 ] ) + ',' +
-                            epsilon( - elements[ 5 ] ) + ',' +
-                            epsilon( elements[ 6 ] ) + ',' +
-                            epsilon( elements[ 7 ] ) + ',' +
-                            epsilon( elements[ 8 ] ) + ',' +
-                            epsilon( - elements[ 9 ] ) + ',' +
-                            epsilon( elements[ 10 ] ) + ',' +
-                            epsilon( elements[ 11 ] ) + ',' +
-                            epsilon( elements[ 12 ] ) + ',' +
-                            epsilon( - elements[ 13 ] ) + ',' +
-                            epsilon( elements[ 14 ] ) + ',' +
-                            epsilon( elements[ 15 ] ) +
-                        ')';
-                    };
-
-                    var getObjectCSSMatrix = function ( matrix, cameraCSSMatrix ) {
-                        var elements = matrix.elements;
-                        var matrix3d = 'matrix3d(' +
-                            epsilon( elements[ 0 ] ) + ',' +
-                            epsilon( elements[ 1 ] ) + ',' +
-                            epsilon( elements[ 2 ] ) + ',' +
-                            epsilon( elements[ 3 ] ) + ',' +
-                            epsilon( - elements[ 4 ] ) + ',' +
-                            epsilon( - elements[ 5 ] ) + ',' +
-                            epsilon( - elements[ 6 ] ) + ',' +
-                            epsilon( - elements[ 7 ] ) + ',' +
-                            epsilon( elements[ 8 ] ) + ',' +
-                            epsilon( elements[ 9 ] ) + ',' +
-                            epsilon( elements[ 10 ] ) + ',' +
-                            epsilon( elements[ 11 ] ) + ',' +
-                            epsilon( elements[ 12 ] ) + ',' +
-                            epsilon( elements[ 13 ] ) + ',' +
-                            epsilon( elements[ 14 ] ) + ',' +
-                            epsilon( elements[ 15 ] ) +
-                        ')';
-                        if ( cameraCSSMatrix === 'none' ) {
-                            return 'translate3d(-50%,-50%,0) ' + matrix3d;
-                        } else {
-                            return 'translate3d(-50%,-50%,0) ' + matrix3d + ' ' + cameraCSSMatrix;
-                        }
-                    };
-
-                    var renderObject = function ( object, scene, camera, cameraCSSMatrix ) {
-                        if ( object instanceof THREE.CSS3DObject ) {
-                            var style = getObjectCSSMatrix( object.matrixWorld, cameraCSSMatrix );
-                            var element = object.element;
-                            var cachedObject = cache.objects.get( object );
-                            if ( cachedObject === undefined || cachedObject.style !== style ) {
-                                element.style.WebkitTransform = style;
-                                element.style.transform = style;
-                                var objectData = { style: style };
-                                cache.objects.set( object, objectData );
-                            }
-                            if ( element.parentNode !== cameraElement ) {
-                                cameraElement.appendChild( element );
-                            }
-                        }
-                        for ( var i = 0, l = object.children.length; i < l; i ++ ) {
-                            renderObject( object.children[ i ], scene, camera, cameraCSSMatrix );
-                        }
-                    };
-
-                    this.render = function ( scene, camera ) {
-                        var fov = camera.projectionMatrix.elements[ 5 ] * _heightHalf;
-                        var style = "translate3d(0,0," + fov + "px)" + getCameraCSSMatrix( camera.matrixWorldInverse ) + " translate3d(" + _widthHalf + "px," + _heightHalf + "px, 0)";
-                        if ( cache.camera.style !== style ) {
-                            cameraElement.style.WebkitTransform = style;
-                            cameraElement.style.transform = style;
-                            cache.camera.style = style;
-                        }
-                        renderObject( scene, scene, camera, style );
-                    };
-                };
-
-                // TrackballControls
-                THREE.TrackballControls = function ( object, domElement ) {
-                    var _this = this;
-                    var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2 };
-                    this.object = object;
-                    this.domElement = ( domElement !== undefined ) ? domElement : document;
-                    this.enabled = true;
-                    this.screen = { left: 0, top: 0, width: 0, height: 0 };
-                    this.rotateSpeed = 1.0;
-                    this.zoomSpeed = 1.2;
-                    this.panSpeed = 0.3;
-                    this.noRotate = false;
-                    this.noZoom = false;
-                    this.noPan = false;
-                    this.staticMoving = false;
-                    this.dynamicDampingFactor = 0.2;
-                    this.minDistance = 0;
-                    this.maxDistance = Infinity;
-                    this.target = new THREE.Vector3();
-                    var EPS = 0.000001;
-                    var lastPosition = new THREE.Vector3();
-                    var _state = STATE.NONE,
-                    _eye = new THREE.Vector3(),
-                    _movePrev = new THREE.Vector2(),
-                    _moveCurr = new THREE.Vector2(),
-                    _zoomStart = new THREE.Vector2(),
-                    _zoomEnd = new THREE.Vector2();
-                    this.target0 = this.target.clone();
-                    this.position0 = this.object.position.clone();
-                    this.up0 = this.object.up.clone();
-
-                    this.handleResize = function () {
-                        if ( this.domElement === document ) {
-                            this.screen.left = 0;
-                            this.screen.top = 0;
-                            this.screen.width = window.innerWidth;
-                            this.screen.height = window.innerHeight;
-                        } else {
-                            var box = this.domElement.getBoundingClientRect();
-                            var d = this.domElement.ownerDocument.documentElement;
-                            this.screen.left = box.left + window.pageXOffset - d.clientLeft;
-                            this.screen.top = box.top + window.pageYOffset - d.clientTop;
-                            this.screen.width = box.width;
-                            this.screen.height = box.height;
-                        }
-                    };
-
-                    this.update = function () {
-                        _eye.subVectors( _this.object.position, _this.target );
-                        _this.object.position.addVectors( _this.target, _eye );
-                        _this.object.lookAt( _this.target );
-                        if ( lastPosition.distanceToSquared( _this.object.position ) > EPS ) {
-                            _this.dispatchEvent( { type: 'change' } );
-                            lastPosition.copy( _this.object.position );
-                        }
-                    };
-
-                    function getMouseOnScreen( pageX, pageY ) {
-                        var vector = new THREE.Vector2();
-                        vector.set(
-                            ( pageX - _this.screen.left ) / _this.screen.width,
-                            ( pageY - _this.screen.top ) / _this.screen.height
-                        );
-                        return vector;
-                    }
-
-                    this.addEventListener = THREE.EventDispatcher.prototype.addEventListener;
-                    this.hasEventListener = THREE.EventDispatcher.prototype.hasEventListener;
-                    this.removeEventListener = THREE.EventDispatcher.prototype.removeEventListener;
-                    this.dispatchEvent = THREE.EventDispatcher.prototype.dispatchEvent;
-
-                    this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
-                    this.domElement.addEventListener( 'mousedown', function ( event ) {
-                        if ( _this.enabled === false ) return;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if ( _state === STATE.NONE ) {
-                            _state = event.button;
-                        }
-                        if ( _state === STATE.ROTATE && ! _this.noRotate ) {
-                            _moveCurr.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                            _movePrev.copy( _moveCurr );
-                        } else if ( _state === STATE.ZOOM && ! _this.noZoom ) {
-                            _zoomStart.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                            _zoomEnd.copy( _zoomStart );
-                        }
-                        document.addEventListener( 'mousemove', mousemove, false );
-                        document.addEventListener( 'mouseup', mouseup, false );
-                    }, false );
-
-                    function mousemove( event ) {
-                        if ( _this.enabled === false ) return;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if ( _state === STATE.ROTATE && ! _this.noRotate ) {
-                            _movePrev.copy( _moveCurr );
-                            _moveCurr.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                        } else if ( _state === STATE.ZOOM && ! _this.noZoom ) {
-                            _zoomEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                        }
-                    }
-
-                    function mouseup( event ) {
-                        if ( _this.enabled === false ) return;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        _state = STATE.NONE;
-                        document.removeEventListener( 'mousemove', mousemove );
-                        document.removeEventListener( 'mouseup', mouseup );
-                    }
-
-                    this.domElement.addEventListener( 'mousewheel', mousewheel, false );
-                    this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false );
-
-                    function mousewheel( event ) {
-                        if ( _this.enabled === false ) return;
-                        event.preventDefault();
-                        event.stopPropagation();
-                        var delta = 0;
-                        if ( event.wheelDelta ) {
-                            delta = event.wheelDelta / 40;
-                        } else if ( event.detail ) {
-                            delta = - event.detail / 3;
-                        }
-                        _eye.subVectors( _this.object.position, _this.target );
-                        _eye.multiplyScalar( 1 - delta * 0.01 );
-                        _this.object.position.addVectors( _this.target, _eye );
-                        _this.object.lookAt( _this.target );
-                    }
-
-                    this.handleResize();
-                };
-                THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-                THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
-
-                console.log('✅ All Three.js components loaded');
-                window.threeJSReady = true;
-            }
-        });
-    </script>
-    
-    <!-- Google Sign-In callback -->
-    <script>
-        function handleCredentialResponse(response) {
-            console.log('Google Sign-In callback triggered');
-            if (window.appHandleCredentialResponse) {
-                window.appHandleCredentialResponse(response);
-            } else {
-                window.pendingCredentialResponse = response;
-            }
+    <title>3D Profile Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    </script>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .element {
+            width: 120px;
+            height: 160px;
+            background: rgba(0, 127, 127, 0.75);
+            border: 1px solid rgba(127, 255, 255, 0.25);
+            border-radius: 4px;
+            text-align: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+
+        .element:hover {
+            background: rgba(0, 127, 127, 0.9);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+        }
+
+        .element .number {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .element .photo {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin: 5px auto;
+            display: block;
+            object-fit: cover;
+        }
+
+        .element .name {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .element .details {
+            font-size: 10px;
+            line-height: 1.2;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .controls button {
+            background: rgba(0, 127, 127, 0.8);
+            border: 1px solid rgba(127, 255, 255, 0.5);
+            color: white;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .controls button:hover {
+            background: rgba(0, 127, 127, 1);
+        }
+
+        .controls button.active {
+            background: rgba(0, 200, 200, 1);
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 2000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div id="loginContainer" class="login-container">
-        <div class="login-card">
-            <h1>3D Profile Visualization</h1>
-            <p>Sign in with Google to access the periodic table visualization</p>
-            <div id="g_id_onload"
-                 data-client_id="953717110168-ld8sea9hpv1q67levd6n5bqo25asfvv1.apps.googleusercontent.com"
-                 data-callback="handleCredentialResponse"
-                 data-auto_prompt="false"
-                 data-use_fedcm_for_prompt="true">
-            </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-size="large"
-                 data-theme="outline"
-                 data-text="sign_in_with"
-                 data-shape="rectangular"
-                 data-logo_alignment="left">
-            </div>
-        </div>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading 3D Profile Visualization...</p>
     </div>
 
-    <!-- Main Application -->
-    <div id="appContainer" class="app-container" style="display: none;">
-        <!-- Loading indicator -->
-        <div id="loadingIndicator" class="loading">
-            <div class="spinner"></div>
-            <p>Loading profiles from Google Sheets...</p>
-        </div>
+    <div id="container"></div>
 
-        <!-- 3D Container -->
-        <div id="container" class="visualization-container"></div>
-
-        <!-- Controls -->
-        <div id="menu" class="menu">
-            <button id="table" class="active">TABLE</button>
-            <button id="sphere">SPHERE</button>
-            <button id="helix">HELIX</button>
-            <button id="grid">GRID</button>
-            <button id="logout" onclick="logout()" class="logout-btn">LOGOUT</button>
-        </div>
+    <div class="controls">
+        <button id="table" class="active">TABLE</button>
+        <button id="sphere">SPHERE</button>
+        <button id="helix">HELIX</button>
+        <button id="grid">GRID</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
