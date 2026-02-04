@@ -1,4 +1,5 @@
-// Simple Working 3D Profile Visualization
+// 3D Profile Visualization - Periodic Table Style
+// Based on Three.js CSS3D Periodic Table Example
 
 // Global variables
 let camera, scene, renderer, controls;
@@ -7,36 +8,47 @@ let targets = { table: [], sphere: [], helix: [], grid: [] };
 let profileData = [];
 let isAuthenticated = false;
 
-// Auto-start for deployment (bypass authentication)
-window.addEventListener('load', function() {
-    console.log('🚀 Auto-starting application for deployment...');
-    setTimeout(() => {
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('appContainer').style.display = 'block';
-        isAuthenticated = true;
-        init();
-        animate();
-    }, 1000);
-});
+// Configuration - YOUR SPECIFIC SETTINGS
+const CONFIG = {
+    // Your Google OAuth Client ID
+    CLIENT_ID: "953717110168-ld8sea9hpv1q67levd6n5bqo25asfvv1.apps.googleusercontent.com",
+    
+    // Your Google Sheets CSV URL
+    SHEETS_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv",
+    
+    // Auto-start for deployment (set to true to bypass login)
+    AUTO_START: true
+};
+
+// Auto-start functionality
+if (CONFIG.AUTO_START) {
+    window.addEventListener('load', function() {
+        console.log('🚀 Auto-starting application...');
+        setTimeout(() => {
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            isAuthenticated = true;
+            init();
+            animate();
+        }, 1000);
+    });
+}
 
 // Authentication handling
 function appHandleCredentialResponse(response) {
     console.log('Login successful:', response);
     isAuthenticated = true;
     
-    // Hide login screen and show app
     document.getElementById('loginContainer').style.display = 'none';
     document.getElementById('appContainer').style.display = 'block';
     
-    // Initialize the 3D visualization
     init();
     animate();
 }
 
-// Make the handler globally available
 window.appHandleCredentialResponse = appHandleCredentialResponse;
 
-// Check for pending response when script loads
+// Check for pending response
 if (window.pendingCredentialResponse) {
     appHandleCredentialResponse(window.pendingCredentialResponse);
     window.pendingCredentialResponse = null;
@@ -48,12 +60,10 @@ function logout() {
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('appContainer').style.display = 'none';
     
-    // Clean up Three.js scene
     if (renderer && renderer.domElement) {
         renderer.domElement.remove();
     }
     
-    // Reset global variables
     scene = null;
     camera = null;
     renderer = null;
@@ -62,22 +72,21 @@ function logout() {
     profileData = [];
 }
 
-// Initialize the application
+// Initialize application
 async function init() {
     try {
-        console.log('🚀 Starting application...');
+        console.log('🚀 Initializing 3D Profile Visualization...');
         
-        // Show loading indicator
         document.getElementById('loadingIndicator').style.display = 'block';
         
-        // Fetch profile data from Google Sheets
+        // Fetch profile data
         await fetchProfileData();
         console.log(`✅ Loaded ${profileData.length} profiles`);
         
-        // Wait for Three.js to be ready
+        // Wait for Three.js
         await waitForThreeJS();
         
-        // Initialize Three.js scene
+        // Initialize 3D scene
         initThreeJS();
         
         // Create profile elements
@@ -92,7 +101,6 @@ async function init() {
         // Setup event listeners
         setupEventListeners();
         
-        // Hide loading indicator
         document.getElementById('loadingIndicator').style.display = 'none';
         
         console.log(`🎉 Application ready with ${profileData.length} profiles!`);
@@ -100,8 +108,6 @@ async function init() {
     } catch (error) {
         console.error('❌ Error initializing app:', error);
         document.getElementById('loadingIndicator').style.display = 'none';
-        
-        // Show error message
         showError(error.message);
     }
 }
@@ -110,8 +116,8 @@ async function init() {
 function waitForThreeJS() {
     return new Promise((resolve) => {
         function check() {
-            if (typeof THREE !== 'undefined' && typeof TWEEN !== 'undefined') {
-                console.log('✅ Three.js and TWEEN ready');
+            if (typeof THREE !== 'undefined' && typeof TWEEN !== 'undefined' && window.threeJSReady) {
+                console.log('✅ Three.js components ready');
                 resolve();
             } else {
                 console.log('⏳ Waiting for Three.js...');
@@ -124,28 +130,36 @@ function waitForThreeJS() {
 
 // Fetch profile data from Google Sheets
 async function fetchProfileData() {
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0q8-ti4RrABWJbHVWw40-EgAjx8FAv6_KXsywg6glAIyt-SFVBJFe8740ouMBfPA1/pub?output=csv';
-    
     try {
         console.log('📡 Fetching data from Google Sheets...');
+        console.log('📍 URL:', CONFIG.SHEETS_URL);
+        
+        let response;
         
         // Try direct fetch first
-        let response = await fetch(csvUrl, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-                'Accept': 'text/csv,text/plain,*/*'
+        try {
+            response = await fetch(CONFIG.SHEETS_URL, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'text/csv,text/plain,*/*'
+                }
+            });
+            
+            if (response.ok) {
+                console.log('✅ Direct fetch successful');
+            } else {
+                throw new Error(`Direct fetch failed: ${response.status}`);
             }
-        });
-        
-        if (!response.ok) {
+        } catch (directError) {
             console.log('⚠️ Direct fetch failed, trying CORS proxy...');
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CONFIG.SHEETS_URL);
             response = await fetch(proxyUrl);
-        }
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            
+            if (!response.ok) {
+                throw new Error(`CORS proxy failed: ${response.status}`);
+            }
+            console.log('✅ CORS proxy fetch successful');
         }
         
         const csvText = await response.text();
@@ -165,17 +179,15 @@ async function fetchProfileData() {
         console.error('❌ Error fetching profile data:', error);
         console.log('🔄 Using fallback test data...');
         
-        // Generate fallback test data
         profileData = generateFallbackData();
         console.log(`✅ Using ${profileData.length} fallback profiles`);
     }
 }
 
-// Parse CSV data into profile objects
+// Parse CSV data
 function parseCSV(csvText) {
     console.log('🔍 Parsing CSV data...');
     
-    // Check if we got HTML instead of CSV
     if (csvText.includes('<html>') || csvText.includes('<!DOCTYPE')) {
         throw new Error('Google Sheet is not properly published as CSV format');
     }
@@ -237,7 +249,7 @@ function parseCSV(csvText) {
     return profiles;
 }
 
-// Parse a single CSV line handling quoted values
+// Parse CSV line with quoted values
 function parseCSVLine(line) {
     const result = [];
     let current = '';
@@ -260,7 +272,7 @@ function parseCSVLine(line) {
     return result.map(val => val.replace(/^"|"$/g, ''));
 }
 
-// Generate fallback test data
+// Generate fallback data
 function generateFallbackData() {
     const profiles = [];
     const firstNames = ['John', 'Jane', 'Mike', 'Sarah', 'David', 'Lisa', 'Tom', 'Anna', 'Chris', 'Emma'];
@@ -268,7 +280,6 @@ function generateFallbackData() {
     const countries = ['USA', 'Canada', 'UK', 'Germany', 'France', 'Japan', 'Australia', 'Brazil', 'India', 'China'];
     const interests = ['Technology', 'Sports', 'Music', 'Art', 'Science', 'Travel', 'Food', 'Books', 'Movies', 'Gaming'];
     
-    // Generate 200 profiles
     for (let i = 0; i < 200; i++) {
         const firstName = firstNames[i % firstNames.length];
         const lastName = lastNames[Math.floor(i / firstNames.length) % lastNames.length];
@@ -319,7 +330,7 @@ function initThreeJS() {
     // Create scene
     scene = new THREE.Scene();
     
-    // Create renderer using CSS3DRenderer
+    // Create renderer
     renderer = new THREE.CSS3DRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.domElement.style.position = 'absolute';
@@ -524,7 +535,6 @@ function setupEventListeners() {
         setActiveButton('grid');
     });
     
-    // Set initial active button
     setActiveButton('table');
 }
 
@@ -537,14 +547,18 @@ function setActiveButton(activeId) {
 
 // Render function
 function render() {
-    renderer.render(scene, camera);
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
 }
 
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
     TWEEN.update();
-    controls.update();
+    if (controls) {
+        controls.update();
+    }
 }
 
 // Handle window resize
@@ -579,271 +593,3 @@ function showError(message) {
     `;
     document.body.appendChild(errorDiv);
 }
-
-// Add CSS3DRenderer and TrackballControls to THREE
-window.addEventListener('load', function() {
-    if (typeof THREE !== 'undefined') {
-        console.log('✅ THREE.js loaded, adding CSS3D components...');
-        
-        // CSS3DObject
-        THREE.CSS3DObject = function ( element ) {
-            THREE.Object3D.call( this );
-            this.element = element;
-            this.element.style.position = 'absolute';
-            this.element.style.pointerEvents = 'auto';
-        };
-        THREE.CSS3DObject.prototype = Object.create( THREE.Object3D.prototype );
-        THREE.CSS3DObject.prototype.constructor = THREE.CSS3DObject;
-
-        // CSS3DRenderer
-        THREE.CSS3DRenderer = function ( parameters ) {
-            var _this = this;
-            var _width, _height;
-            var _widthHalf, _heightHalf;
-            var matrix = new THREE.Matrix4();
-            var cache = {
-                camera: { fov: 0, style: '' },
-                objects: new WeakMap()
-            };
-            var domElement = document.createElement( 'div' );
-            domElement.style.overflow = 'hidden';
-            this.domElement = domElement;
-            var cameraElement = document.createElement( 'div' );
-            cameraElement.style.WebkitTransformStyle = 'preserve-3d';
-            cameraElement.style.transformStyle = 'preserve-3d';
-            domElement.appendChild( cameraElement );
-
-            this.setSize = function ( width, height ) {
-                _width = width;
-                _height = height;
-                _widthHalf = _width / 2;
-                _heightHalf = _height / 2;
-                domElement.style.width = width + 'px';
-                domElement.style.height = height + 'px';
-                cameraElement.style.width = width + 'px';
-                cameraElement.style.height = height + 'px';
-            };
-
-            var epsilon = function ( value ) {
-                return Math.abs( value ) < 1e-10 ? 0 : value;
-            };
-
-            var getCameraCSSMatrix = function ( matrix ) {
-                var elements = matrix.elements;
-                return 'matrix3d(' +
-                    epsilon( elements[ 0 ] ) + ',' +
-                    epsilon( - elements[ 1 ] ) + ',' +
-                    epsilon( elements[ 2 ] ) + ',' +
-                    epsilon( elements[ 3 ] ) + ',' +
-                    epsilon( elements[ 4 ] ) + ',' +
-                    epsilon( - elements[ 5 ] ) + ',' +
-                    epsilon( elements[ 6 ] ) + ',' +
-                    epsilon( elements[ 7 ] ) + ',' +
-                    epsilon( elements[ 8 ] ) + ',' +
-                    epsilon( - elements[ 9 ] ) + ',' +
-                    epsilon( elements[ 10 ] ) + ',' +
-                    epsilon( elements[ 11 ] ) + ',' +
-                    epsilon( elements[ 12 ] ) + ',' +
-                    epsilon( - elements[ 13 ] ) + ',' +
-                    epsilon( elements[ 14 ] ) + ',' +
-                    epsilon( elements[ 15 ] ) +
-                ')';
-            };
-
-            var getObjectCSSMatrix = function ( matrix, cameraCSSMatrix ) {
-                var elements = matrix.elements;
-                var matrix3d = 'matrix3d(' +
-                    epsilon( elements[ 0 ] ) + ',' +
-                    epsilon( elements[ 1 ] ) + ',' +
-                    epsilon( elements[ 2 ] ) + ',' +
-                    epsilon( elements[ 3 ] ) + ',' +
-                    epsilon( - elements[ 4 ] ) + ',' +
-                    epsilon( - elements[ 5 ] ) + ',' +
-                    epsilon( - elements[ 6 ] ) + ',' +
-                    epsilon( - elements[ 7 ] ) + ',' +
-                    epsilon( elements[ 8 ] ) + ',' +
-                    epsilon( elements[ 9 ] ) + ',' +
-                    epsilon( elements[ 10 ] ) + ',' +
-                    epsilon( elements[ 11 ] ) + ',' +
-                    epsilon( elements[ 12 ] ) + ',' +
-                    epsilon( elements[ 13 ] ) + ',' +
-                    epsilon( elements[ 14 ] ) + ',' +
-                    epsilon( elements[ 15 ] ) +
-                ')';
-                if ( cameraCSSMatrix === 'none' ) {
-                    return 'translate3d(-50%,-50%,0) ' + matrix3d;
-                } else {
-                    return 'translate3d(-50%,-50%,0) ' + matrix3d + ' ' + cameraCSSMatrix;
-                }
-            };
-
-            var renderObject = function ( object, scene, camera, cameraCSSMatrix ) {
-                if ( object instanceof THREE.CSS3DObject ) {
-                    var style = getObjectCSSMatrix( object.matrixWorld, cameraCSSMatrix );
-                    var element = object.element;
-                    var cachedObject = cache.objects.get( object );
-                    if ( cachedObject === undefined || cachedObject.style !== style ) {
-                        element.style.WebkitTransform = style;
-                        element.style.transform = style;
-                        var objectData = { style: style };
-                        cache.objects.set( object, objectData );
-                    }
-                    if ( element.parentNode !== cameraElement ) {
-                        cameraElement.appendChild( element );
-                    }
-                }
-                for ( var i = 0, l = object.children.length; i < l; i ++ ) {
-                    renderObject( object.children[ i ], scene, camera, cameraCSSMatrix );
-                }
-            };
-
-            this.render = function ( scene, camera ) {
-                var fov = camera.projectionMatrix.elements[ 5 ] * _heightHalf;
-                var style = "translate3d(0,0," + fov + "px)" + getCameraCSSMatrix( camera.matrixWorldInverse ) + " translate3d(" + _widthHalf + "px," + _heightHalf + "px, 0)";
-                if ( cache.camera.style !== style ) {
-                    cameraElement.style.WebkitTransform = style;
-                    cameraElement.style.transform = style;
-                    cache.camera.style = style;
-                }
-                renderObject( scene, scene, camera, style );
-            };
-        };
-
-        // TrackballControls
-        THREE.TrackballControls = function ( object, domElement ) {
-            var _this = this;
-            var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2 };
-            this.object = object;
-            this.domElement = ( domElement !== undefined ) ? domElement : document;
-            this.enabled = true;
-            this.screen = { left: 0, top: 0, width: 0, height: 0 };
-            this.rotateSpeed = 1.0;
-            this.zoomSpeed = 1.2;
-            this.panSpeed = 0.3;
-            this.noRotate = false;
-            this.noZoom = false;
-            this.noPan = false;
-            this.staticMoving = false;
-            this.dynamicDampingFactor = 0.2;
-            this.minDistance = 0;
-            this.maxDistance = Infinity;
-            this.target = new THREE.Vector3();
-            var EPS = 0.000001;
-            var lastPosition = new THREE.Vector3();
-            var _state = STATE.NONE,
-            _eye = new THREE.Vector3(),
-            _movePrev = new THREE.Vector2(),
-            _moveCurr = new THREE.Vector2(),
-            _zoomStart = new THREE.Vector2(),
-            _zoomEnd = new THREE.Vector2();
-            this.target0 = this.target.clone();
-            this.position0 = this.object.position.clone();
-            this.up0 = this.object.up.clone();
-
-            this.handleResize = function () {
-                if ( this.domElement === document ) {
-                    this.screen.left = 0;
-                    this.screen.top = 0;
-                    this.screen.width = window.innerWidth;
-                    this.screen.height = window.innerHeight;
-                } else {
-                    var box = this.domElement.getBoundingClientRect();
-                    var d = this.domElement.ownerDocument.documentElement;
-                    this.screen.left = box.left + window.pageXOffset - d.clientLeft;
-                    this.screen.top = box.top + window.pageYOffset - d.clientTop;
-                    this.screen.width = box.width;
-                    this.screen.height = box.height;
-                }
-            };
-
-            this.update = function () {
-                _eye.subVectors( _this.object.position, _this.target );
-                _this.object.position.addVectors( _this.target, _eye );
-                _this.object.lookAt( _this.target );
-                if ( lastPosition.distanceToSquared( _this.object.position ) > EPS ) {
-                    _this.dispatchEvent( { type: 'change' } );
-                    lastPosition.copy( _this.object.position );
-                }
-            };
-
-            function getMouseOnScreen( pageX, pageY ) {
-                var vector = new THREE.Vector2();
-                vector.set(
-                    ( pageX - _this.screen.left ) / _this.screen.width,
-                    ( pageY - _this.screen.top ) / _this.screen.height
-                );
-                return vector;
-            }
-
-            this.addEventListener = THREE.EventDispatcher.prototype.addEventListener;
-            this.hasEventListener = THREE.EventDispatcher.prototype.hasEventListener;
-            this.removeEventListener = THREE.EventDispatcher.prototype.removeEventListener;
-            this.dispatchEvent = THREE.EventDispatcher.prototype.dispatchEvent;
-
-            this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
-            this.domElement.addEventListener( 'mousedown', function ( event ) {
-                if ( _this.enabled === false ) return;
-                event.preventDefault();
-                event.stopPropagation();
-                if ( _state === STATE.NONE ) {
-                    _state = event.button;
-                }
-                if ( _state === STATE.ROTATE && ! _this.noRotate ) {
-                    _moveCurr.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                    _movePrev.copy( _moveCurr );
-                } else if ( _state === STATE.ZOOM && ! _this.noZoom ) {
-                    _zoomStart.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                    _zoomEnd.copy( _zoomStart );
-                }
-                document.addEventListener( 'mousemove', mousemove, false );
-                document.addEventListener( 'mouseup', mouseup, false );
-            }, false );
-
-            function mousemove( event ) {
-                if ( _this.enabled === false ) return;
-                event.preventDefault();
-                event.stopPropagation();
-                if ( _state === STATE.ROTATE && ! _this.noRotate ) {
-                    _movePrev.copy( _moveCurr );
-                    _moveCurr.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                } else if ( _state === STATE.ZOOM && ! _this.noZoom ) {
-                    _zoomEnd.copy( getMouseOnScreen( event.pageX, event.pageY ) );
-                }
-            }
-
-            function mouseup( event ) {
-                if ( _this.enabled === false ) return;
-                event.preventDefault();
-                event.stopPropagation();
-                _state = STATE.NONE;
-                document.removeEventListener( 'mousemove', mousemove );
-                document.removeEventListener( 'mouseup', mouseup );
-            }
-
-            this.domElement.addEventListener( 'mousewheel', mousewheel, false );
-            this.domElement.addEventListener( 'DOMMouseScroll', mousewheel, false );
-
-            function mousewheel( event ) {
-                if ( _this.enabled === false ) return;
-                event.preventDefault();
-                event.stopPropagation();
-                var delta = 0;
-                if ( event.wheelDelta ) {
-                    delta = event.wheelDelta / 40;
-                } else if ( event.detail ) {
-                    delta = - event.detail / 3;
-                }
-                _eye.subVectors( _this.object.position, _this.target );
-                _eye.multiplyScalar( 1 - delta * 0.01 );
-                _this.object.position.addVectors( _this.target, _eye );
-                _this.object.lookAt( _this.target );
-            }
-
-            this.handleResize();
-        };
-        THREE.TrackballControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-        THREE.TrackballControls.prototype.constructor = THREE.TrackballControls;
-
-        console.log('✅ CSS3D components added to THREE.js');
-    }
-});
