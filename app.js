@@ -16,7 +16,7 @@ let isSignedIn = false;
 document.addEventListener('DOMContentLoaded', function() {
     showSignInScreen();
     // Give a moment for the DOM to be ready, then initialize Google Sign-In
-    setTimeout(initializeGoogleSignIn, 500);
+    setTimeout(initializeGoogleSignIn, 1000);
 });
 
 function initializeGoogleSignIn() {
@@ -32,7 +32,7 @@ function initializeGoogleSignIn() {
                 console.error('Google Identity Services failed to load');
                 showSignInError();
             }
-        }, 2000);
+        }, 3000);
     }
 }
 
@@ -46,19 +46,19 @@ function setupGoogleSignIn() {
         });
         
         // Render the sign-in button
-        google.accounts.id.renderButton(
-            document.getElementById("google-signin-button"),
-            { 
+        const buttonElement = document.getElementById("google-signin-button");
+        if (buttonElement) {
+            google.accounts.id.renderButton(buttonElement, { 
                 theme: "filled_blue", 
                 size: "large",
                 width: 300,
                 text: "signin_with",
                 shape: "rectangular"
-            }
-        );
-        
-        console.log('Google Sign-In initialized successfully');
-        
+            });
+            console.log('Google Sign-In button rendered successfully');
+        } else {
+            console.error('Google sign-in button element not found');
+            setTimeout(setupGoogleSignI
     } catch (error) {
         console.error('Error setting up Google Sign-In:', error);
         showSignInError();
