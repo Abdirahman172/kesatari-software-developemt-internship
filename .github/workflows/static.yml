@@ -1,0 +1,27 @@
+name: Static checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Quick static check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Node.js setup
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Validate files (no-op)
+        run: |
+          echo "Running quick static check..."
+          # ensure index.html and app.js are present
+          test -f index.html && test -f app.js
+      - name: Success message
+        run: echo "Static checks passed"

@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>3D Data Visualization - Periodic Table Style</title>
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <meta name="referrer" content="no-referrer-when-downgrade">
     <style>
         html, body {
@@ -35,23 +37,27 @@
         .element {
             width: 120px;
             height: 160px;
-            box-shadow: 0px 0px 12px rgba(0,255,255,0.5);
-            border: 1px solid rgba(127,255,255,0.25);
+            box-shadow: 0px 0px 12px rgba(0,139,139,0.5);
+            border: 2px solid rgba(0,139,139,0.6);
             text-align: center;
-            cursor: default;
+            cursor: pointer;
             transform-style: preserve-3d;
             transition: all 0.3s ease;
             position: relative;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #008B8B, #006666);
         }
 
         .element:hover {
-            box-shadow: 0px 0px 12px rgba(0,255,255,0.75);
-            border: 1px solid rgba(127,255,255,0.75);
+            box-shadow: 0px 0px 20px rgba(0,139,139,0.8);
+            border: 2px solid rgba(0,139,139,0.9);
+            transform: scale(1.05);
         }
 
         .element.selected {
-            border: 2px solid #ff0000;
-            box-shadow: 0px 0px 15px rgba(255,0,0,0.8);
+            border: 3px solid #00FFFF;
+            box-shadow: 0px 0px 25px rgba(0,255,255,1);
+            transform: scale(1.1);
         }
 
         .element .number {
@@ -64,22 +70,25 @@
 
         .element .symbol {
             position: absolute;
-            top: 60px;
+            top: 50px;
             left: 0px;
             right: 0px;
-            font-size: 40px;
+            font-size: 36px;
             font-weight: bold;
-            color: rgba(255,255,255,0.75);
-            text-shadow: 0 0 10px #00ffff;
+            color: rgba(255,255,255,0.95);
+            text-shadow: 0 0 15px currentColor;
+            letter-spacing: 1px;
         }
 
         .element .details {
             position: absolute;
-            bottom: 15px;
-            left: 0px;
-            right: 0px;
-            font-size: 12px;
-            color: rgba(127,255,255,0.75);
+            bottom: 10px;
+            left: 5px;
+            right: 5px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.2;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
         }
 
         .element .networth {
@@ -96,47 +105,53 @@
 
         .element .photo {
             position: absolute;
-            top: 5px;
-            left: 5px;
-            width: 50px;
-            height: 50px;
-            border-radius: 4px;
+            top: 8px;
+            left: 8px;
+            width: 45px;
+            height: 45px;
+            border-radius: 6px;
             object-fit: cover;
-            border: 1px solid rgba(0,255,255,0.5);
+            border: 2px solid rgba(0,255,255,0.6);
             cursor: pointer;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .element.selected .photo {
             opacity: 1;
             visibility: visible;
+            transition: all 0.3s ease;
+            z-index: 10;
         }
 
         .element .photo:hover {
             border: 2px solid rgba(0,255,255,1);
-            box-shadow: 0 0 8px rgba(0,255,255,0.6);
+            box-shadow: 0 0 12px rgba(0,255,255,0.8);
+            transform: scale(1.1);
         }
 
         button {
-            color: rgba(127,255,255,0.75);
-            background: transparent;
-            outline: 1px solid rgba(127,255,255,0.75);
+            color: rgba(127,255,255,0.9);
+            background: rgba(0,0,0,0.7);
+            outline: 2px solid rgba(127,255,255,0.6);
             border: 0px;
-            padding: 5px 10px;
+            padding: 8px 16px;
             cursor: pointer;
-            margin: 0 5px;
+            margin: 0 8px;
             display: inline-block;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         button:hover {
-            background-color: rgba(0,255,255,0.5);
+            background-color: rgba(0,255,255,0.2);
+            outline-color: rgba(0,255,255,0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,255,255,0.3);
         }
 
         button:active {
             color: #000000;
-            background-color: rgba(0,255,255,0.75);
+            background-color: rgba(0,255,255,0.8);
+            transform: translateY(0px);
         }
 
         #loading {
@@ -176,119 +191,173 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 400px;
+            width: 420px;
             height: auto;
             background: rgba(0,0,0,0.95);
-            border: 2px solid rgba(0,255,255,0.8);
-            border-radius: 8px;
+            border: 3px solid rgba(0,255,255,0.8);
+            border-radius: 12px;
             display: none;
             z-index: 10000;
-            padding: 20px;
-            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+            padding: 25px;
+            box-shadow: 0 0 30px rgba(0,255,255,0.4);
         }
 
         .popup-content {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             align-items: flex-start;
         }
 
         .photo-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 12px;
             flex: 1;
         }
 
         .photo-card {
-            width: 80px;
-            height: 100px;
+            width: 90px;
+            height: 110px;
             background: #333;
-            border: 2px solid #666;
-            border-radius: 4px;
+            border: 3px solid #666;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
 
-        .photo-card.red { border-color: #ff4444; background: #4a1a1a; }
-        .photo-card.yellow { border-color: #ffaa44; background: #4a3a1a; }
-        .photo-card.green { border-color: #44ff44; background: #1a4a1a; }
+        .photo-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+        }
+
+        .photo-card.selected-card {
+            border-color: #00FFFF;
+            background: linear-gradient(135deg, #1a4a4a, #153a3a);
+            box-shadow: 0 0 15px rgba(0,255,255,0.5);
+            transform: scale(1.05);
+        }
+
+        .photo-card.empty-card {
+            border-color: #333;
+            background: #222;
+            box-shadow: none;
+        }
+
+        .empty-slot {
+            width: 55px;
+            height: 55px;
+            border: 2px dashed #555;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .photo-card.teal { 
+            border-color: #008B8B; 
+            background: linear-gradient(135deg, #1a4a4a, #153a3a);
+            box-shadow: 0 0 10px rgba(0,139,139,0.3);
+        }
+        .photo-card.red { 
+            border-color: #ff4444; 
+            background: linear-gradient(135deg, #4a1a1a, #3a1515);
+            box-shadow: 0 0 10px rgba(255,68,68,0.3);
+        }
+        .photo-card.yellow { 
+            border-color: #ffaa44; 
+            background: linear-gradient(135deg, #4a3a1a, #3a2a15);
+            box-shadow: 0 0 10px rgba(255,170,68,0.3);
+        }
+        .photo-card.green { 
+            border-color: #44ff44; 
+            background: linear-gradient(135deg, #1a4a1a, #153a15);
+            box-shadow: 0 0 10px rgba(68,255,68,0.3);
+        }
 
         .photo-card img {
-            width: 50px;
-            height: 50px;
-            border-radius: 4px;
+            width: 55px;
+            height: 55px;
+            border-radius: 6px;
             object-fit: cover;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         .photo-card .name {
             color: #fff;
-            font-size: 8px;
+            font-size: 9px;
             text-align: center;
-            padding: 0 2px;
+            padding: 0 4px;
             line-height: 1.1;
+            font-weight: 500;
         }
 
         .color-bar {
-            width: 40px;
-            height: 180px;
+            width: 45px;
+            height: 200px;
             background: linear-gradient(to bottom, 
                 #ff0000 0%,
-                #ff4400 20%,
-                #ff8800 40%,
-                #ffcc00 60%,
-                #ccff00 80%,
-                #00ff00 100%);
-            border: 2px solid #666;
-            border-radius: 4px;
+                #ff2200 10%,
+                #ff4400 25%,
+                #ff6600 40%,
+                #ff8800 55%,
+                #ffaa00 70%,
+                #008B8B 85%,
+                #006666 100%);
+            border: 3px solid #666;
+            border-radius: 8px;
             position: relative;
             flex-shrink: 0;
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
         }
 
         .color-bar .label-top {
             position: absolute;
-            top: -20px;
+            top: -25px;
             left: 50%;
             transform: translateX(-50%);
             color: #ff4444;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
+            text-shadow: 0 0 5px currentColor;
         }
 
         .color-bar .label-bottom {
             position: absolute;
-            bottom: -20px;
+            bottom: -25px;
             left: 50%;
             transform: translateX(-50%);
-            color: #44ff44;
-            font-size: 10px;
+            color: #008B8B;
+            font-size: 11px;
             font-weight: bold;
+            text-shadow: 0 0 5px currentColor;
         }
 
         .photo-popup .close {
             position: absolute;
-            top: 5px;
-            right: 10px;
+            top: 8px;
+            right: 12px;
             color: #fff;
-            font-size: 20px;
+            font-size: 22px;
             cursor: pointer;
             z-index: 10001;
-            background: rgba(255,0,0,0.7);
-            width: 25px;
-            height: 25px;
+            background: rgba(255,0,0,0.8);
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             line-height: 1;
+            transition: all 0.3s ease;
         }
 
         .photo-popup .close:hover {
-            background: rgba(255,0,0,0.9);
+            background: rgba(255,0,0,1);
+            transform: scale(1.1);
         }
     </style>
 </head>
@@ -324,16 +393,8 @@
 
     <div class="color-legend">
         <div class="legend-item">
-            <span class="legend-color" style="background-color: #ff4444;"></span>
-            Red: &lt; $100K
-        </div>
-        <div class="legend-item">
-            <span class="legend-color" style="background-color: #ff8844;"></span>
-            Orange: $100K - $200K
-        </div>
-        <div class="legend-item">
-            <span class="legend-color" style="background-color: #44ff44;"></span>
-            Green: &gt; $200K
+            <span class="legend-color" style="background-color: #008B8B;"></span>
+            Teal: Data Elements
         </div>
     </div>
 
