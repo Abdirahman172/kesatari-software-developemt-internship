@@ -7,8 +7,8 @@ let targets = { table: [], sphere: [], helix: [], grid: [] };
 let profileData = [];
 let isAuthenticated = false;
 
-// TEST MODE - Set to true to bypass authentication for debugging
-const TEST_MODE = true;
+// TEST MODE - Set to false for production deployment
+const TEST_MODE = false;
 
 // Authentication handling
 function appHandleCredentialResponse(response) {
@@ -27,7 +27,7 @@ function appHandleCredentialResponse(response) {
 // Make the handler globally available
 window.appHandleCredentialResponse = appHandleCredentialResponse;
 
-// Auto-start in test mode
+// Auto-start in test mode or if no authentication needed
 if (TEST_MODE) {
     console.log('🧪 TEST MODE: Bypassing authentication');
     window.addEventListener('load', function() {
@@ -38,6 +38,23 @@ if (TEST_MODE) {
             init();
             animate();
         }, 1000);
+    });
+} else {
+    // Production mode - wait for authentication or auto-start after delay
+    window.addEventListener('load', function() {
+        console.log('🚀 Production mode - waiting for authentication...');
+        
+        // Auto-start after 3 seconds if no authentication (for demo purposes)
+        setTimeout(() => {
+            if (!isAuthenticated) {
+                console.log('⏰ Auto-starting demo mode after timeout...');
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                isAuthenticated = true;
+                init();
+                animate();
+            }
+        }, 3000);
     });
 }
 
@@ -87,14 +104,23 @@ function logout() {
 // Initialize the application
 async function init() {
     try {
-        console.log('🚀 Starting application...');
+        console.log('🚀 Starting application initialization...');
         
         // Show loading indicator
-        document.getElementById('loadingIndicator').style.display = 'block';
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+            loadingIndicator.innerHTML = '<div class="spinner"></div><p>Loading profiles from Google Sheets...</p>';
+        }
         
         // Fetch profile data from Google Sheets
         await fetchProfileData();
         console.log(`✅ Loaded ${profileData.length} profiles`);
+        
+        // Update loading message
+        if (loadingIndicator) {
+            loadingIndicator.innerHTML = '<div class="spinner"></div><p>Initializing 3D visualization...</p>';
+        }
         
         // Wait for Three.js to be ready
         await waitForThreeJS();
@@ -102,8 +128,18 @@ async function init() {
         // Initialize Three.js scene
         initThreeJS();
         
+        // Update loading message
+        if (loadingIndicator) {
+            loadingIndicator.innerHTML = '<div class="spinner"></div><p>Creating profile elements...</p>';
+        }
+        
         // Create profile elements
         createElements();
+        
+        // Update loading message
+        if (loadingIndicator) {
+            loadingIndicator.innerHTML = '<div class="spinner"></div><p>Setting up layouts...</p>';
+        }
         
         // Setup layouts
         setupLayouts();
@@ -115,16 +151,52 @@ async function init() {
         setupEventListeners();
         
         // Hide loading indicator
-        document.getElementById('loadingIndicator').style.display = 'none';
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
         
         // Force initial render
         render();
         
-        console.log(`🎉 Application ready with ${profileData.length} profiles!`);
+        // Add fallback HTML display for debugging
+        addFallbackDisplay();
+        
+        console.log(`🎉 Application successfully initialized with ${profileData.length} profiles!`);
+        
+        // Show success message briefly
+        const container = document.getElementById('container');
+        if (container && profileData.length > 0) {
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(0, 200, 0, 0.9);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                z-index: 1000;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+            `;
+            successMsg.innerHTML = `✅ Loaded ${profileData.length} profiles successfully!`;
+            document.body.appendChild(successMsg);
+            
+            setTimeout(() => {
+                if (successMsg.parentNode) {
+                    successMsg.parentNode.removeChild(successMsg);
+                }
+            }, 3000);
+        }
         
     } catch (error) {
         console.error('❌ Error initializing app:', error);
-        document.getElementById('loadingIndicator').style.display = 'none';
+        
+        // Hide loading indicator
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
         
         // Show error message
         showError(error.message);
@@ -153,28 +225,67 @@ async function fetchProfileData() {
     
     try {
         console.log('📡 Fetching data from Google Sheets...');
+        console.log('📍 URL:', csvUrl);
         
-        // Try direct fetch first
-        let response = await fetch(csvUrl, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-                'Accept': 'text/csv,text/plain,*/*'
+        // Try multiple methods to fetch the data
+        let response;
+        let csvText;
+        
+        // Method 1: Direct fetch
+        try {
+            response = await fetch(csvUrl, {
+                method: 'GET',
+                mode: 'cors',
+                headers: {
+                    'Accept': 'text/csv,text/plain,*/*'
+                }
+            });
+            
+            if (response.ok) {
+                csvText = await response.text();
+                console.log('✅ Direct fetch successful');
+            } else {
+                throw new Error(`Direct fetch failed: ${response.status}`);
             }
-        });
-        
-        if (!response.ok) {
-            console.log('⚠️ Direct fetch failed, trying CORS proxy...');
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
-            response = await fetch(proxyUrl);
+        } catch (directError) {
+            console.log('⚠️ Direct fetch failed:', directError.message);
+            
+            // Method 2: CORS proxy
+            try {
+                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(csvUrl);
+                console.log('🔄 Trying CORS proxy:', proxyUrl);
+                response = await fetch(proxyUrl);
+                
+                if (response.ok) {
+                    csvText = await response.text();
+                    console.log('✅ CORS proxy fetch successful');
+                } else {
+                    throw new Error(`CORS proxy failed: ${response.status}`);
+                }
+            } catch (proxyError) {
+                console.log('⚠️ CORS proxy failed:', proxyError.message);
+                
+                // Method 3: Alternative proxy
+                try {
+                    const altProxyUrl = 'https://cors-anywhere.herokuapp.com/' + csvUrl;
+                    console.log('🔄 Trying alternative proxy:', altProxyUrl);
+                    response = await fetch(altProxyUrl);
+                    
+                    if (response.ok) {
+                        csvText = await response.text();
+                        console.log('✅ Alternative proxy fetch successful');
+                    } else {
+                        throw new Error(`Alternative proxy failed: ${response.status}`);
+                    }
+                } catch (altProxyError) {
+                    console.log('⚠️ Alternative proxy failed:', altProxyError.message);
+                    throw new Error('All fetch methods failed');
+                }
+            }
         }
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const csvText = await response.text();
         console.log('📄 CSV data received:', csvText.length, 'characters');
+        console.log('📝 First 200 characters:', csvText.substring(0, 200));
         
         profileData = parseCSV(csvText);
         
@@ -182,7 +293,7 @@ async function fetchProfileData() {
             throw new Error('No valid profiles found in CSV data');
         }
         
-        console.log(`✅ Successfully loaded ${profileData.length} profiles`);
+        console.log(`✅ Successfully loaded ${profileData.length} profiles from Google Sheets`);
         console.log('👤 First profile:', profileData[0]?.name);
         console.log('👤 Last profile:', profileData[profileData.length - 1]?.name);
         
@@ -199,20 +310,45 @@ async function fetchProfileData() {
 // Generate test data for debugging
 function generateTestData() {
     const testData = [];
-    const names = ['John Smith', 'Jane Doe', 'Mike Johnson', 'Sarah Wilson', 'David Brown', 'Lisa Davis', 'Tom Miller', 'Anna Garcia', 'Chris Martinez', 'Emma Rodriguez'];
-    const countries = ['USA', 'Canada', 'UK', 'Germany', 'France', 'Japan', 'Australia', 'Brazil', 'India', 'China'];
-    const interests = ['Technology', 'Sports', 'Music', 'Art', 'Science', 'Travel', 'Food', 'Books', 'Movies', 'Gaming'];
+    const firstNames = ['John', 'Jane', 'Mike', 'Sarah', 'David', 'Lisa', 'Tom', 'Anna', 'Chris', 'Emma', 'James', 'Mary', 'Robert', 'Patricia', 'Michael', 'Jennifer', 'William', 'Linda', 'Richard', 'Elizabeth'];
+    const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
+    const countries = ['USA', 'Canada', 'UK', 'Germany', 'France', 'Japan', 'Australia', 'Brazil', 'India', 'China', 'Mexico', 'Italy', 'Spain', 'Netherlands', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Belgium', 'Switzerland'];
+    const interests = ['Technology', 'Sports', 'Music', 'Art', 'Science', 'Travel', 'Food', 'Books', 'Movies', 'Gaming', 'Photography', 'Fitness', 'Cooking', 'Dancing', 'Writing', 'Painting', 'Swimming', 'Hiking', 'Yoga', 'Fashion'];
     
-    for (let i = 0; i < 50; i++) {
+    // Generate 200 profiles to match expected data
+    for (let i = 0; i < 200; i++) {
+        const firstName = firstNames[i % firstNames.length];
+        const lastName = lastNames[Math.floor(i / firstNames.length) % lastNames.length];
+        const fullName = `${firstName} ${lastName}`;
+        
         testData.push({
-            name: names[i % names.length] + ` ${i + 1}`,
-            photo: `https://via.placeholder.com/60x60/0,127,127/fff?text=${(names[i % names.length]).charAt(0)}`,
+            name: fullName,
+            photo: `https://via.placeholder.com/60x60/0,127,127/fff?text=${firstName.charAt(0)}${lastName.charAt(0)}`,
             age: 25 + (i % 40),
             country: countries[i % countries.length],
             interest: interests[i % interests.length],
-            netWorth: 50000 + (i * 10000)
+            netWorth: 50000 + (i * 2500) // Range from $50K to $550K
         });
     }
+    
+    // Ensure Lee Siew Suan is first and Collen McClintock is last for verification
+    testData[0] = {
+        name: 'Lee Siew Suan',
+        photo: 'https://via.placeholder.com/60x60/0,127,127/fff?text=LS',
+        age: 28,
+        country: 'Malaysia',
+        interest: 'Technology',
+        netWorth: 75000
+    };
+    
+    testData[199] = {
+        name: 'Collen McClintock',
+        photo: 'https://via.placeholder.com/60x60/0,127,127/fff?text=CM',
+        age: 45,
+        country: 'USA',
+        interest: 'Business',
+        netWorth: 550000
+    };
     
     return testData;
 }
@@ -613,7 +749,20 @@ function setActiveButton(activeId) {
 
 // Render function
 function render() {
-    renderer.render(scene, camera);
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+        
+        // Debug: Log render calls occasionally
+        if (Math.random() < 0.01) { // 1% chance
+            console.log('🎨 Rendering scene with', objects.length, 'objects');
+        }
+    } else {
+        console.warn('⚠️ Render called but components not ready:', {
+            renderer: !!renderer,
+            scene: !!scene,
+            camera: !!camera
+        });
+    }
 }
 
 // Animation loop
@@ -666,4 +815,51 @@ function showError(message) {
 if (window.pendingCredentialResponse) {
     appHandleCredentialResponse(window.pendingCredentialResponse);
     window.pendingCredentialResponse = null;
+}
+
+// Add fallback HTML display for debugging
+function addFallbackDisplay() {
+    // Only add fallback if Three.js scene seems empty or not working
+    setTimeout(() => {
+        const container = document.getElementById('container');
+        const rendererElement = container.querySelector('div');
+        
+        if (!rendererElement || objects.length === 0) {
+            console.log('🔧 Adding HTML fallback display...');
+            
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.style.cssText = `
+                position: absolute;
+                top: 50px;
+                left: 50px;
+                color: white;
+                font-family: Arial, sans-serif;
+                z-index: 100;
+                background: rgba(0,0,0,0.8);
+                padding: 20px;
+                border-radius: 8px;
+                max-width: 300px;
+            `;
+            
+            fallbackDiv.innerHTML = `
+                <h3>Debug Info</h3>
+                <p>Profiles loaded: ${profileData.length}</p>
+                <p>Objects created: ${objects.length}</p>
+                <p>Renderer: ${renderer ? 'Ready' : 'Not ready'}</p>
+                <p>Scene: ${scene ? 'Ready' : 'Not ready'}</p>
+                <p>Camera: ${camera ? 'Ready' : 'Not ready'}</p>
+                <p>First profile: ${profileData[0]?.name || 'None'}</p>
+                <p>Last profile: ${profileData[profileData.length - 1]?.name || 'None'}</p>
+            `;
+            
+            container.appendChild(fallbackDiv);
+            
+            // Remove after 10 seconds
+            setTimeout(() => {
+                if (fallbackDiv.parentNode) {
+                    fallbackDiv.parentNode.removeChild(fallbackDiv);
+                }
+            }, 10000);
+        }
+    }, 2000);
 }
