@@ -1,0 +1,35 @@
+{
+  "name": "3d-periodic-table-visualization",
+  "version": "1.0.0",
+  "description": "A complete 3D visualization system that reads data from Google Sheets and displays it in an interactive periodic table format using Three.js",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "deploy": "gh-pages -d ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abdirahman172/kasatari-software-developer-ineternship.git"
+  },
+  "keywords": [
+    "3d",
+    "visualization",
+    "periodic-table",
+    "threejs",
+    "google-sheets",
+    "data-visualization",
+    "interactive",
+    "web-app"
+  ],
+  "author": "Abdirahman172",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Abdirahman172/kasatari-software-developer-ineternship/issues"
+  },
+  "homepage": "https://abdirahman172.github.io/kasatari-software-developer-ineternship/",
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
