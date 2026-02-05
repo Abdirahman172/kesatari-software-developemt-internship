@@ -6,7 +6,7 @@ const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTSa1kwu7O75ST0
 let isSignedIn = false;
 let camera, scene, renderer, controls;
 let objects = [];
-let targets = { table: [], sphere: [], helix: [], grid: [] };
+let targets = { table: [], sphere: [], helix: [], grid: [], pyramid: [] };
 let selectedElement = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -439,6 +439,65 @@ function init3D() {
         targets.grid.push(object);
     }
 
+    // Pyramid layout
+    for (let i = 0; i < objects.length; i++) {
+        const object = new THREE.Object3D();
+        
+        // Calculate pyramid layer and position within layer
+        let layer = 0;
+        let elementsInLayer = 0;
+        let totalElements = 0;
+        
+        // Find which layer this element belongs to
+        while (totalElements + (layer + 1) * (layer + 1) <= i) {
+            totalElements += (layer + 1) * (layer + 1);
+            layer++;
+        }
+        
+        // Position within current layer
+        const positionInLayer = i - totalElements;
+        const elementsInCurrentLayer = (layer + 1) * (layer + 1);
+        const sideLength = layer + 1;
+        
+        // Calculate x, z position within the square layer
+        let x, z;
+        if (sideLength === 1) {
+            x = 0;
+            z = 0;
+        } else {
+            const side = Math.floor(positionInLayer / sideLength);
+            const posOnSide = positionInLayer % sideLength;
+            
+            switch (side) {
+                case 0: // Front side
+                    x = (posOnSide - sideLength / 2 + 0.5) * 150;
+                    z = sideLength / 2 * 150;
+                    break;
+                case 1: // Right side
+                    x = sideLength / 2 * 150;
+                    z = (sideLength / 2 - posOnSide - 0.5) * 150;
+                    break;
+                case 2: // Back side
+                    x = (sideLength / 2 - posOnSide - 0.5) * 150;
+                    z = -sideLength / 2 * 150;
+                    break;
+                case 3: // Left side
+                    x = -sideLength / 2 * 150;
+                    z = (posOnSide - sideLength / 2 + 0.5) * 150;
+                    break;
+                default:
+                    x = 0;
+                    z = 0;
+            }
+        }
+        
+        // Y position increases with layer height
+        const y = layer * 200 - 400;
+        
+        object.position.set(x, y, z);
+        targets.pyramid.push(object);
+    }
+
     // Renderer
     renderer = new THREE.CSS3DRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -608,6 +667,10 @@ function setupEventListeners() {
 
     document.getElementById('grid').addEventListener('click', () => {
         transform(targets.grid, 2000);
+    });
+
+    document.getElementById('pyramid').addEventListener('click', () => {
+        transform(targets.pyramid, 2000);
     });
 }
 
